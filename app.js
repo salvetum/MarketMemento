@@ -1,5 +1,7 @@
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+const isFirefox = navigator.userAgent.includes('Firefox/');
+if (isFirefox) document.documentElement.classList.add('is-firefox');
 
 document.addEventListener('DOMContentLoaded', () => {
     'use strict';
@@ -548,7 +550,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById(id);
         container.replaceChildren();
         const theme = document.documentElement.getAttribute('data-bs-theme') || 'dark';
-        const baseChart = { background: 'transparent', foreColor: getComputedStyle(document.documentElement).getPropertyValue('--muted').trim(), toolbar: { show: false }, animations: { speed: 420 } };
+        const baseChart = {
+            background: 'transparent',
+            foreColor: getComputedStyle(document.documentElement).getPropertyValue('--muted').trim(),
+            toolbar: { show: false },
+            animations: { enabled: !isFirefox, speed: isFirefox ? 0 : 420 }
+        };
         state.charts[id] = new ApexCharts(container, {
             ...options,
             chart: { ...baseChart, ...options.chart },

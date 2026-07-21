@@ -966,6 +966,40 @@ footer span:first-child { color: var(--muted-strong); font-family: var(--font-di
 .modal-content p { color: var(--muted-strong); font-size: .82rem; line-height: 1.7; }
 [data-bs-theme="dark"] .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
 
+/* Firefox repaints large animated backdrops more aggressively than Chromium.
+   Keep the glass look while avoiding continuous full-page blur and shadow work. */
+html.is-firefox {
+    --glass: rgba(13, 26, 35, .88);
+    --glass-strong: rgba(11, 23, 31, .96);
+}
+
+html.is-firefox[data-bs-theme="light"] {
+    --glass: rgba(247, 252, 255, .92);
+    --glass-strong: rgba(255, 255, 255, .97);
+}
+
+.is-firefox .orb {
+    filter: none;
+    opacity: .58;
+    animation: none;
+}
+
+.is-firefox .grid-overlay { animation: none; }
+
+.is-firefox .glass-panel,
+.is-firefox .stat-card,
+.is-firefox .table > thead,
+.is-firefox .export-overlay {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.is-firefox .upload-icon { animation: gentle-float 4.5s ease-in-out infinite; }
+.is-firefox .import-report { animation: none; }
+.is-firefox .import-report.is-entering { animation: import-report-in .42s cubic-bezier(.2,.75,.25,1) both; }
+.is-firefox .import-stat i { animation: gentle-float 3.2s calc(var(--import-stat-index, 0) * 180ms) ease-in-out infinite; }
+.is-firefox .table tbody tr { animation: none; }
+
 @media (max-width: 980px) {
     .onboarding { grid-template-columns: minmax(0, 1fr); padding-top: 46px; }
     .hero-copy { max-width: 760px; padding: 28px 8px 12px; }
