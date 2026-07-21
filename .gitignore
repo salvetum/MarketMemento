@@ -1,0 +1,5 @@
+node_modules/
+tmp/
+marketmemento-report-*
+.DS_Store
+Thumbs.db

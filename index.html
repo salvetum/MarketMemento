@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="tr" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Steam Topluluk Pazarı geçmişinizi cihazınızdan çıkarmadan analiz edin.">
+    <meta name="theme-color" content="#071016">
+    <title>MarketMemento — Pazar Geçmişi Görüntüleyici</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+    <link href="vendor/fonts/fonts.css" rel="stylesheet">
+    <link href="vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="styles.css?v=8" rel="stylesheet">
+</head>
+<body>
+    <div class="ambient" aria-hidden="true">
+        <span class="orb orb-blue"></span>
+        <span class="orb orb-violet"></span>
+        <span class="orb orb-green"></span>
+        <span class="grid-overlay"></span>
+    </div>
+
+    <main class="site-shell">
+        <header class="topbar glass-panel">
+            <a class="brand" href="#" aria-label="MarketMemento ana sayfa">
+                <span class="brand-mark"><i class="bi bi-steam"></i></span>
+                <span>
+                    <strong>Market<span>Memento</span></strong>
+                    <small data-i18n="brandSubtitle">CSV geçmiş görüntüleyici</small>
+                </span>
+            </a>
+
+            <div class="topbar-actions">
+                <span class="privacy-pill d-none d-md-inline-flex">
+                    <i class="bi bi-shield-check"></i>
+                    <span data-i18n="localBadge">Veri cihazında kalır</span>
+                </span>
+                <div class="language-switch" aria-label="Dil seçimi">
+                    <button type="button" id="lang-tr" class="active" aria-pressed="true">TR</button>
+                    <button type="button" id="lang-en" aria-pressed="false">EN</button>
+                </div>
+                <button type="button" class="icon-button" id="info-button" data-bs-toggle="modal" data-bs-target="#info-modal" aria-label="Proje bilgisi" title="Proje bilgisi">
+                    <i class="bi bi-info-circle"></i>
+                </button>
+                <button type="button" class="icon-button" id="theme-switcher" aria-label="Temayı değiştir" title="Temayı değiştir">
+                    <i class="bi bi-sun"></i>
+                </button>
+            </div>
+        </header>
+
+        <section id="onboarding" class="onboarding">
+            <div class="hero-copy">
+                <span class="eyebrow"><i class="bi bi-stars"></i> <span data-i18n="eyebrow">Steam geçmişin, tek ekranda</span></span>
+                <h1 data-i18n="heroTitle">Pazar geçmişini<br><span>kolayca incele.</span></h1>
+                <p data-i18n="heroText">Steam Market CSV dosyanı yükle; alış ve satış geçmişini grafikler ve tablolarla incele.</p>
+                <div class="hero-points">
+                    <span><i class="bi bi-check2-circle"></i> <span data-i18n="pointPrivacy">Dosyan cihazından çıkmaz</span></span>
+                    <span><i class="bi bi-check2-circle"></i> <span data-i18n="pointAccount">Steam girişi gerekmez</span></span>
+                    <span><i class="bi bi-check2-circle"></i> <span data-i18n="pointFast">Hızlı özet</span></span>
+                </div>
+            </div>
+
+            <div class="upload-card glass-panel">
+                <div class="card-kicker">
+                    <span class="step-index">01</span>
+                    <span data-i18n="uploadKicker">Dosyanı aç</span>
+                </div>
+                <label class="drop-zone" id="drop-zone" for="csv-file-input">
+                    <input type="file" id="csv-file-input" accept=".csv,text/csv" multiple hidden>
+                    <span class="upload-icon"><i class="bi bi-cloud-arrow-up"></i></span>
+                    <strong data-i18n="dropTitle">CSV dosyanı buraya bırak</strong>
+                    <small data-i18n="dropText">bir veya birden fazla dosya seçebilirsin</small>
+                    <span class="primary-button"><i class="bi bi-folder2-open"></i> <span data-i18n="chooseFile">Dosya seç</span></span>
+                </label>
+                <div id="upload-status" class="upload-status" role="status" aria-live="polite" hidden></div>
+                <div class="upload-footer">
+                    <span><i class="bi bi-filetype-csv"></i> CSV</span>
+                    <span><i class="bi bi-lock"></i> <span data-i18n="browserOnly">Tarayıcı içinde işlenir</span></span>
+                </div>
+                <button type="button" id="demo-button" class="text-button">
+                    <i class="bi bi-play-circle"></i> <span data-i18n="demoButton">Örnek verilerle keşfet</span>
+                </button>
+            </div>
+
+            <div class="csv-guide glass-panel">
+                <div class="guide-heading">
+                    <div>
+                        <span class="card-kicker"><span class="step-index">02</span><span data-i18n="guideKicker">CSV dosyasını edin</span></span>
+                        <h2 data-i18n="guideTitle">Dosyayı nereden bulacağım?</h2>
+                    </div>
+                    <i class="bi bi-compass guide-icon"></i>
+                </div>
+
+                <div class="guide-steps">
+                    <article class="guide-step">
+                        <span>1</span>
+                        <div>
+                            <h3 data-i18n="guideStep1Title">Steam Inventory Helper'ı kur</h3>
+                            <p data-i18n="guideStep1Text">Eklentiyi yalnızca resmi Chrome Web Mağazası sayfasından yükle.</p>
+                            <a class="guide-link" href="https://chromewebstore.google.com/detail/steam-inventory-helper/cmeakgjggjdlcpncigglobpjbkabhmjl" target="_blank" rel="noopener noreferrer">
+                                <span data-i18n="extensionLink">Chrome Web Mağazası'nı aç</span> <i class="bi bi-arrow-up-right"></i>
+                            </a>
+                        </div>
+                    </article>
+                    <article class="guide-step">
+                        <span>2</span>
+                        <div>
+                            <h3 data-i18n="guideStep2Title">Steam Topluluk Pazarı'nı aç</h3>
+                            <p data-i18n="guideStep2Text">Tarayıcıdan Steam'e giriş yap ve “Pazar Geçmişim” bölümüne git.</p>
+                            <a class="guide-link" href="https://steamcommunity.com/market/#myhistory" target="_blank" rel="noopener noreferrer">
+                                <span data-i18n="marketLink">Pazar Geçmişim'i aç</span> <i class="bi bi-arrow-up-right"></i>
+                            </a>
+                        </div>
+                    </article>
+                    <article class="guide-step">
+                        <span>3</span>
+                        <div>
+                            <h3 data-i18n="guideStep3Title">Export .CSV file'a tıkla</h3>
+                            <p data-i18n="guideStep3Text">Eklentinin eklediği dışa aktarma düğmesiyle geçmişini indir, sonra dosyayı yukarıya bırak.</p>
+                        </div>
+                    </article>
+                </div>
+
+                <aside class="security-note">
+                    <i class="bi bi-shield-exclamation"></i>
+                    <div>
+                        <strong data-i18n="securityTitle">Üçüncü taraf eklenti uyarısı</strong>
+                        <p data-i18n="securityText">Steam Inventory Helper; Valve, Steam veya MarketMemento'ya ait değildir ve Steam siteleri, sekmeler ya da çerezler için geniş izinler isteyebilir. Kurmadan önce güncel izinleri, geliştiriciyi ve gizlilik politikasını incele. Yalnızca resmi mağaza bağlantısını kullan; şifreni eklenti ekranlarına girme ve istersen CSV'yi aldıktan sonra eklentiyi devre dışı bırak.</p>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section id="dashboard" class="dashboard" hidden>
+            <div class="dashboard-header glass-panel">
+                <div>
+                    <span class="eyebrow"><i class="bi bi-activity"></i> <span data-i18n="dashboardEyebrow">Dosya özeti</span></span>
+                    <h1 data-i18n="dashboardTitle">Pazar geçmişin</h1>
+                    <p id="dataset-meta"></p>
+                </div>
+                <div class="dashboard-tools">
+                    <div class="dashboard-actions">
+                        <input type="file" id="merge-file-input" accept=".csv,text/csv" multiple hidden>
+                        <label for="merge-file-input" class="secondary-button action-label" title="CSV ekle">
+                            <i class="bi bi-file-earmark-plus"></i> <span data-i18n="addFiles">CSV ekle</span>
+                        </label>
+                        <button type="button" id="calculation-button" class="secondary-button" data-bs-toggle="modal" data-bs-target="#calculation-modal">
+                            <i class="bi bi-sliders"></i> <span data-i18n="calculationButton">Hesaplama</span>
+                        </button>
+                        <button type="button" id="install-app" class="secondary-button icon-only-mobile" hidden>
+                            <i class="bi bi-download"></i> <span data-i18n="installApp">Uygulamayı yükle</span>
+                        </button>
+                        <button type="button" id="export-png" class="secondary-button icon-only-mobile" title="PNG">
+                            <i class="bi bi-image"></i> <span>PNG</span>
+                        </button>
+                        <button type="button" id="export-pdf" class="secondary-button icon-only-mobile" title="PDF">
+                            <i class="bi bi-file-earmark-pdf"></i> <span>PDF</span>
+                        </button>
+                        <button type="button" id="reset-button" class="secondary-button icon-only-mobile">
+                            <i class="bi bi-arrow-counterclockwise"></i> <span data-i18n="newFile">Yeni dosya</span>
+                        </button>
+                    </div>
+                    <small class="export-hint" data-i18n="exportHint">PNG ve PDF, açık olan analiz sekmesini raporlar.</small>
+                </div>
+            </div>
+
+            <div id="dashboard-status" class="dashboard-status" role="status" aria-live="polite" hidden></div>
+            <div id="import-report" class="import-report glass-panel" aria-label="İçe aktarma özeti" hidden></div>
+
+            <div class="filter-bar glass-panel">
+                <label>
+                    <span data-i18n="gameFilter">Oyun</span>
+                    <select id="game-filter" class="form-select">
+                        <option value="" data-i18n="allGames">Tüm oyunlar</option>
+                    </select>
+                </label>
+                <label class="search-field">
+                    <span data-i18n="itemFilter">Ürün ara</span>
+                    <span><i class="bi bi-search"></i><input id="item-filter" class="form-control" type="search" data-i18n-placeholder="itemPlaceholder" placeholder="Ürün adı..."></span>
+                </label>
+                <label>
+                    <span data-i18n="dateFrom">Başlangıç</span>
+                    <input id="date-from" class="form-control" type="month">
+                </label>
+                <label>
+                    <span data-i18n="dateTo">Bitiş</span>
+                    <input id="date-to" class="form-control" type="month">
+                </label>
+                <button type="button" id="clear-filters" class="filter-reset"><i class="bi bi-x-circle"></i> <span data-i18n="clearFilters">Filtreleri temizle</span></button>
+            </div>
+
+            <div id="summary-cards" class="summary-grid"></div>
+
+            <div class="analytics-panel glass-panel">
+                <div class="tabs" role="tablist">
+                    <button type="button" class="tab-button active" data-tab="overview-panel" role="tab" aria-selected="true"><i class="bi bi-grid-1x2"></i> <span data-i18n="tabOverview">Genel bakış</span></button>
+                    <button type="button" class="tab-button" data-tab="games-panel" role="tab" aria-selected="false"><i class="bi bi-controller"></i> <span data-i18n="tabGames">Oyunlar</span></button>
+                    <button type="button" class="tab-button" data-tab="profit-panel" role="tab" aria-selected="false"><i class="bi bi-graph-up-arrow"></i> <span data-i18n="tabProfit">Alış / satış</span></button>
+                    <button type="button" class="tab-button" data-tab="activity-panel" role="tab" aria-selected="false"><i class="bi bi-calendar3"></i> <span data-i18n="tabActivity">Aktivite</span></button>
+                </div>
+
+                <div id="overview-panel" class="tab-panel active" role="tabpanel">
+                    <div class="chart-grid">
+                        <div class="chart-card chart-wide"><div id="monthly-activity-chart"></div></div>
+                        <div class="chart-card"><div id="type-pie-chart"></div></div>
+                        <div class="chart-card"><div id="roi-profit-chart"></div></div>
+                        <div class="chart-card"><div id="roi-loss-chart"></div></div>
+                    </div>
+                </div>
+                <div id="games-panel" class="tab-panel" role="tabpanel" hidden>
+                    <div id="game-stats-container"></div>
+                </div>
+                <div id="profit-panel" class="tab-panel" role="tabpanel" hidden>
+                    <div class="method-note"><i class="bi bi-info-circle"></i> <span data-i18n="fifoNote">Gerçekleşmiş sonuçlar, satışları en eski eşleşen alışlarla eşleştiren FIFO yaklaşımıyla tahmin edilir.</span></div>
+                    <div id="profit-analysis-container"></div>
+                </div>
+                <div id="activity-panel" class="tab-panel" role="tabpanel" hidden>
+                    <div class="activity-grid">
+                        <div class="activity-card">
+                            <div class="section-heading">
+                                <div><span class="mini-kicker" data-i18n="heatmapKicker">Gün ve saat</span><h2 data-i18n="heatmapTitle">Aktivite ısı haritası</h2></div>
+                                <span class="heatmap-legend" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+                            </div>
+                            <div id="activity-heatmap" class="heatmap-wrap"></div>
+                        </div>
+                        <div class="activity-card">
+                            <div id="year-comparison-chart"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <span>MarketMemento</span>
+            <span data-i18n="footerText">Kişisel bir proje · Veriler yalnızca bu tarayıcıda işlenir.</span>
+        </footer>
+    </main>
+
+    <div class="modal fade" id="info-modal" tabindex="-1" aria-labelledby="info-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-panel">
+                <div class="modal-header border-0">
+                    <h2 class="modal-title fs-5" id="info-title" data-i18n="infoTitle">Gizlilik ve hesaplama</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body pt-0">
+                    <p data-i18n="infoPrivacy">Yüklediğiniz CSV herhangi bir sunucuya gönderilmez. Analiz cihazınızda yapılır ve kolaylık için tarayıcı depolamasında tutulur.</p>
+                    <p data-i18n="infoAccuracy">Sonuçlar CSV'deki tutarlara dayanır. Eksik geçmiş, farklı para birimleri veya Steam ücretlerinin dosyada gösterilme biçimi sonuçları etkileyebilir.</p>
+                    <p data-i18n="infoProject">Bu site boş zamanda geliştirilen kişisel bir deneme projesidir.</p>
+                    <p class="mb-0" data-i18n="infoAffiliation">MarketMemento; Valve, Steam veya Steam Inventory Helper ile bağlantılı değildir.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="calculation-modal" tabindex="-1" aria-labelledby="calculation-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-panel">
+                <div class="modal-header border-0">
+                    <div>
+                        <span class="mini-kicker" data-i18n="calculationKicker">Görünüm ayarları</span>
+                        <h2 class="modal-title fs-5" id="calculation-title" data-i18n="calculationTitle">Hesaplama tercihleri</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body pt-0">
+                    <label class="setting-row" for="currency-select">
+                        <span><strong data-i18n="currencyTitle">CSV para birimi</strong><small data-i18n="currencyText">Dönüşüm yapmaz; yalnızca tutarları seçtiğin simgeyle gösterir.</small></span>
+                        <select id="currency-select" class="form-select setting-control">
+                            <option value="USD">USD ($)</option>
+                            <option value="TRY">TRY (₺)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="GBP">GBP (£)</option>
+                            <option value="CNY">CNY (¥)</option>
+                            <option value="JPY">JPY (¥)</option>
+                        </select>
+                    </label>
+                    <label class="setting-row" for="fee-toggle">
+                        <span><strong data-i18n="feeTitle">Ücret tahmini uygula</strong><small data-i18n="feeText">Satış tutarından belirlediğin oranı düşerek FIFO farkını yeniden hesaplar.</small></span>
+                        <span class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="fee-toggle"></span>
+                    </label>
+                    <label class="setting-row" for="fee-rate">
+                        <span><strong data-i18n="feeRateTitle">Tahmini ücret oranı</strong><small data-i18n="feeRateText">CSV tutarının ücreti zaten içerip içermediğini kontrol et.</small></span>
+                        <span class="percent-input"><input id="fee-rate" class="form-control setting-control" type="number" min="0" max="40" step="0.1" value="15"><b>%</b></span>
+                    </label>
+                    <div class="method-note mb-0"><i class="bi bi-exclamation-triangle"></i><span data-i18n="feeWarning">Bu seçenek yalnızca tahmindir. Steam'in oyun ve ürün bazlı ücretleri değişebilir.</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="export-overlay" class="export-overlay" hidden>
+        <div class="glass-panel"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span data-i18n="exportPreparing">Rapor hazırlanıyor…</span></div>
+    </div>
+
+    <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="vendor/apexcharts/apexcharts.min.js"></script>
+    <script src="vendor/papaparse/papaparse.min.js"></script>
+    <script src="vendor/html2canvas/html2canvas.min.js"></script>
+    <script src="vendor/jspdf/jspdf.umd.min.js"></script>
+    <script src="core.js"></script>
+    <script src="app.js?v=8"></script>
+</body>
+</html>

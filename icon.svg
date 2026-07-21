@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MarketMemento">
+  <defs>
+    <linearGradient id="bg" x1="70" y1="44" x2="448" y2="474" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#173b52"/>
+      <stop offset="1" stop-color="#071016"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="126" y1="350" x2="394" y2="127" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#57e6a5"/>
+      <stop offset="1" stop-color="#67c1f5"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <path d="M104 350c52-80 91-44 132-104 42-61 70-130 172-106" fill="none" stroke="url(#accent)" stroke-width="36" stroke-linecap="round"/>
+  <circle cx="407" cy="141" r="54" fill="#0b1b25" stroke="#67c1f5" stroke-width="25"/>
+  <circle cx="104" cy="350" r="36" fill="#57e6a5"/>
+  <path d="M106 426h300" stroke="#fff" stroke-opacity=".18" stroke-width="20" stroke-linecap="round"/>
+</svg>
