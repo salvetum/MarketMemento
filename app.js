@@ -434,12 +434,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function playImportReportAnimation() {
+        window.clearTimeout(playImportReportAnimation.timer);
         elements.importReport.classList.remove('is-entering');
         requestAnimationFrame(() => {
             elements.importReport.classList.add('is-entering');
-            elements.importReport.lastElementChild?.addEventListener('animationend', () => {
+            playImportReportAnimation.timer = window.setTimeout(() => {
                 elements.importReport.classList.remove('is-entering');
-            }, { once: true });
+            }, 1000);
         });
     }
 
