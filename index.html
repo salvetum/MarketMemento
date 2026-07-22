@@ -12,7 +12,7 @@
     <link href="vendor/fonts/fonts.css" rel="stylesheet">
     <link href="vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="styles.css?v=16" rel="stylesheet">
+    <link href="styles.css?v=17" rel="stylesheet">
 </head>
 <body>
     <div class="ambient" aria-hidden="true">
@@ -252,7 +252,7 @@
     </main>
 
     <div class="modal fade" id="info-modal" tabindex="-1" aria-labelledby="info-title" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
             <div class="modal-content glass-panel">
                 <div class="modal-header border-0">
                     <h2 class="modal-title fs-5" id="info-title" data-i18n="infoTitle">Gizlilik ve hesaplama</h2>
@@ -262,7 +262,43 @@
                     <p data-i18n="infoPrivacy">Yüklediğiniz CSV herhangi bir sunucuya gönderilmez. Analiz cihazınızda yapılır ve kolaylık için tarayıcı depolamasında tutulur.</p>
                     <p data-i18n="infoAccuracy">Sonuçlar CSV'deki tutarlara dayanır. Eksik geçmiş, farklı para birimleri veya Steam ücretlerinin dosyada gösterilme biçimi sonuçları etkileyebilir.</p>
                     <p data-i18n="infoProject">Bu site boş zamanda geliştirilen kişisel bir deneme projesidir.</p>
-                    <p class="mb-0" data-i18n="infoAffiliation">MarketMemento; Valve, Steam veya Steam Inventory Helper ile bağlantılı değildir.</p>
+                    <p data-i18n="infoAffiliation">MarketMemento; Valve, Steam veya Steam Inventory Helper ile bağlantılı değildir.</p>
+
+                    <section class="tech-section" aria-labelledby="tech-title">
+                        <div class="tech-heading">
+                            <div>
+                                <span class="mini-kicker" data-i18n="techKicker">Altyapı şeffaflığı</span>
+                                <h3 id="tech-title" data-i18n="techTitle">Kütüphaneler ve servisler</h3>
+                            </div>
+                            <a class="tech-license-link" href="https://github.com/salvetum/MarketMemento/blob/main/vendor/THIRD_PARTY_NOTICES.md" target="_blank" rel="noopener noreferrer">
+                                <span data-i18n="techLicenses">Lisanslar</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="tech-grid">
+                            <a class="tech-item" href="https://getbootstrap.com/" target="_blank" rel="noopener noreferrer">
+                                <i class="bi bi-bootstrap" aria-hidden="true"></i><span><strong>Bootstrap + Icons</strong><small data-i18n="techBootstrap">Arayüz bileşenleri ve simgeler</small></span><i class="bi bi-arrow-up-right tech-arrow" aria-hidden="true"></i>
+                            </a>
+                            <a class="tech-item" href="https://www.papaparse.com/" target="_blank" rel="noopener noreferrer">
+                                <i class="bi bi-filetype-csv" aria-hidden="true"></i><span><strong>Papa Parse</strong><small data-i18n="techPapa">CSV dosyalarını ayrıştırma</small></span><i class="bi bi-arrow-up-right tech-arrow" aria-hidden="true"></i>
+                            </a>
+                            <a class="tech-item" href="https://apexcharts.com/" target="_blank" rel="noopener noreferrer">
+                                <i class="bi bi-bar-chart-line" aria-hidden="true"></i><span><strong>ApexCharts</strong><small data-i18n="techApex">Etkileşimli veri grafikleri</small></span><i class="bi bi-arrow-up-right tech-arrow" aria-hidden="true"></i>
+                            </a>
+                            <a class="tech-item" href="https://github.com/parallax/jsPDF" target="_blank" rel="noopener noreferrer">
+                                <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i><span><strong>html2canvas + jsPDF</strong><small data-i18n="techExport">PNG ve PDF rapor çıktıları</small></span><i class="bi bi-arrow-up-right tech-arrow" aria-hidden="true"></i>
+                            </a>
+                            <a class="tech-item" href="https://frankfurter.dev/" target="_blank" rel="noopener noreferrer">
+                                <i class="bi bi-currency-exchange" aria-hidden="true"></i><span><strong>Frankfurter API</strong><small data-i18n="techRates">Para birimi referans kurları</small></span><i class="bi bi-arrow-up-right tech-arrow" aria-hidden="true"></i>
+                            </a>
+                            <a class="tech-item" href="https://developer.mozilla.org/docs/Web/API/IndexedDB_API" target="_blank" rel="noopener noreferrer">
+                                <i class="bi bi-device-ssd" aria-hidden="true"></i><span><strong>Browser APIs</strong><small data-i18n="techBrowser">Yerel saklama ve çevrimdışı çalışma</small></span><i class="bi bi-arrow-up-right tech-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="tech-privacy-note">
+                            <i class="bi bi-shield-check" aria-hidden="true"></i>
+                            <p class="mb-0" data-i18n="techPrivacy">CSV içeriği yalnızca tarayıcıda işlenir. Frankfurter'a kur dönüşümü için yalnızca para birimi kodları gönderilir.</p>
+                        </div>
+                    </section>
                 </div>
             </div>
         </div>
@@ -308,7 +344,7 @@
                     </label>
                     <label class="setting-row" for="fee-rate">
                         <span><strong data-i18n="feeRateTitle">Tahmini ücret oranı</strong><small data-i18n="feeRateText">CSV tutarının ücreti zaten içerip içermediğini kontrol et.</small></span>
-                        <span class="percent-input"><input id="fee-rate" class="form-control setting-control" type="number" min="0" max="40" step="0.1" value="15"><b>%</b></span>
+                        <span class="percent-input"><input id="fee-rate" class="form-control" type="number" min="0" max="40" step="0.1" value="15"><span class="percent-suffix" aria-hidden="true">%</span></span>
                     </label>
                     <div class="method-note mb-0"><i class="bi bi-exclamation-triangle"></i><span data-i18n="feeWarning">Bu seçenek yalnızca tahmindir. Steam'in oyun ve ürün bazlı ücretleri değişebilir.</span></div>
                 </div>
@@ -328,6 +364,6 @@
     <script src="vendor/html2canvas/html2canvas.min.js"></script>
     <script src="vendor/jspdf/jspdf.umd.min.js"></script>
     <script src="core.js"></script>
-    <script src="app.js?v=16"></script>
+    <script src="app.js?v=17"></script>
 </body>
 </html>

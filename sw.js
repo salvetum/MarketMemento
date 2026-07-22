@@ -1,10 +1,10 @@
-const CACHE_NAME = 'marketmemento-v9';
+const CACHE_NAME = 'marketmemento-v10';
 const APP_ASSETS = [
     './',
     './index.html',
-    './styles.css?v=16',
+    './styles.css?v=17',
     './core.js',
-    './app.js?v=16',
+    './app.js?v=17',
     './manifest.webmanifest',
     './icon.svg',
     './assets/icons/icon-192.png',
