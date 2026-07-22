@@ -4,6 +4,7 @@ const {
     normaliseType,
     priceInCents,
     parseMarketDate,
+    marketDateHasTime,
     deduplicateRows,
     analyseMarketData
 } = require('../core.js');
@@ -33,6 +34,22 @@ test('yılı olmayan gelecek tarih önceki yıla alınır ve bozuk tarih reddedi
     assert.equal(parseMarketDate('Dec 02 18:30', reference).getFullYear(), 2025);
     assert.equal(parseMarketDate('2023-02-29'), null);
     assert.equal(parseMarketDate('Jan 04 2024 12:75'), null);
+});
+
+test('saat içermeyen geçmiş aylık, saat içeren geçmiş saatlik ısı haritası üretir', () => {
+    const dateOnly = [{
+        'Market Name': 'Case', 'Game Name': 'Game', 'Acted On': '2025-01-06',
+        _type: 'purchase', _price: 100, _date: '2025-01-06T00:00:00.000Z', _index: 0
+    }];
+    const timed = [{
+        'Market Name': 'Case', 'Game Name': 'Game', 'Acted On': '2025-01-06 14:30',
+        _type: 'purchase', _price: 100, _date: '2025-01-06T14:30:00.000Z', _index: 0
+    }];
+    assert.equal(marketDateHasTime(dateOnly[0]['Acted On']), false);
+    assert.equal(marketDateHasTime(timed[0]['Acted On']), true);
+    assert.equal(analyseMarketData(dateOnly).activityMode, 'month');
+    assert.equal(analyseMarketData(timed).activityMode, 'hour');
+    assert.equal(analyseMarketData([...dateOnly, ...timed]).activityMode, 'month');
 });
 
 test('işlem kimliği ve satır içeriği tekrarları güvenli biçimde ayıklar', () => {

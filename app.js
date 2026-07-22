@@ -58,7 +58,7 @@ window.addEventListener('load', () => window.setTimeout(probeFrameRate, 1600), {
 document.addEventListener('DOMContentLoaded', () => {
     'use strict';
 
-    const { normaliseType, priceInCents, parseMarketDate, deduplicateRows, analyseMarketData } = window.MarketMementoCore;
+    const { normaliseType, priceInCents, parseMarketDate, marketDateHasTime, deduplicateRows, analyseMarketData } = window.MarketMementoCore;
 
     const translations = {
         tr: {
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
             guideStep3Title: "Export .CSV file'a tıkla", guideStep3Text: 'Eklentinin eklediği dışa aktarma düğmesiyle geçmişini indir, sonra dosyayı yukarıya bırak.',
             securityTitle: 'Üçüncü taraf eklenti uyarısı',
             securityText: "Steam Inventory Helper; Valve, Steam veya MarketMemento'ya ait değildir ve Steam siteleri, sekmeler ya da çerezler için geniş izinler isteyebilir. Kurmadan önce güncel izinleri, geliştiriciyi ve gizlilik politikasını incele. Yalnızca resmi mağaza bağlantısını kullan; şifreni eklenti ekranlarına girme ve istersen CSV'yi aldıktan sonra eklentiyi devre dışı bırak.",
-            dashboardEyebrow: 'Dosya özeti', dashboardTitle: 'Pazar geçmişin', newFile: 'Yeni dosya', addFiles: 'CSV ekle', calculationButton: 'Hesaplama', installApp: 'Uygulamayı yükle',
+            dashboardEyebrow: 'Dosya özeti', dashboardTitle: 'Pazar geçmişin', newFile: 'Yeni dosya', addFiles: 'CSV ekle', calculationButton: 'Ayarlar', installApp: 'Uygulamayı yükle',
             exportHint: 'PNG ve PDF, açık olan analiz sekmesini raporlar.',
             gameFilter: 'Oyun', allGames: 'Tüm oyunlar', itemFilter: 'Ürün ara', itemPlaceholder: 'Ürün adı...', dateFrom: 'Başlangıç', dateTo: 'Bitiş', clearFilters: 'Filtreleri temizle',
             tabOverview: 'Genel bakış', tabGames: 'Oyunlar', tabProfit: 'Alış / satış', tabActivity: 'Aktivite',
@@ -91,14 +91,14 @@ document.addEventListener('DOMContentLoaded', () => {
             statusStorageWarning: 'Özet hazır; ancak veriler tarayıcı hafızasına kaydedilemedi.',
             statusMerged: 'CSV dosyası birleştirildi', statusDuplicates: 'tekrar eden kayıt atlandı', statusFilesFailed: 'dosya okunamadı',
             rows: 'kayıt', filteredRows: 'filtrelenmiş kayıt', demoData: 'Örnek veri', matchedSales: 'eşleşen satış', unmatchedPurchases: 'eşleşmemiş alış', invalidDates: 'kaydın tarihi okunamadı',
-            summaryProfit: 'Gerçekleşmiş fark', summarySales: 'Satış hacmi', summaryGrossSales: 'Brüt satış hacmi', summaryPurchases: 'Alış hacmi', summaryFees: 'Tahmini ücret', summaryTransactions: 'İşlem', disabled: 'Kapalı',
+            summaryProfit: 'Gerçekleşmiş fark', summarySales: 'Satış hacmi', summaryGrossSales: 'Brüt satış hacmi', summaryPurchases: 'Alış hacmi', summaryFees: 'Tahmini ücret', summaryTransactions: 'İşlem',
             importFiles: 'CSV dosyası', importAccepted: 'kabul edilen kayıt', importDuplicates: 'atlanan tekrar', importInvalidDates: 'okunamayan tarih', importReportLabel: 'İçe aktarma özeti',
             chartTimeline: 'Aylık işlem hareketi', chartTypes: 'Alış / satış dağılımı', chartProfit: 'En kârlı ürünler', chartLoss: 'En zararlı ürünler',
             purchases: 'Alışlar', sales: 'Satışlar', net: 'Net', noData: 'Bu filtre için gösterilecek veri yok.',
             gameTableTitle: 'Oyun özeti', profitTableTitle: 'FIFO alış / satış eşleşmeleri', searchTable: 'Tabloda ara…',
             colGame: 'Oyun', colTransactions: 'İşlem', colSpent: 'Alış', colEarned: 'Satış', colCashflow: 'Nakit akışı',
             colItem: 'Ürün', colMatched: 'Eşleşme', colAvgBuy: 'Ort. alış', colAvgSell: 'Ort. satış', colRoi: 'ROI', colNet: 'Net',
-            heatmapKicker: 'Gün ve saat', heatmapTitle: 'Aktivite ısı haritası', heatmapCell: 'işlem', yearComparison: 'Yıllara göre aylık işlemler',
+            heatmapKicker: 'Gün ve saat', heatmapKickerMonths: 'Gün ve ay', heatmapTitle: 'Aktivite ısı haritası', heatmapCell: 'işlem', yearComparison: 'Yıllara göre aylık işlemler',
             calculationKicker: 'Görünüm ayarları', calculationTitle: 'Hesaplama tercihleri', currencyTitle: 'CSV para birimi', currencyText: 'Dönüşüm yapmaz; yalnızca tutarları seçtiğin simgeyle gösterir.',
             feeTitle: 'Ücret tahmini uygula', feeText: 'Satış tutarından belirlediğin oranı düşerek FIFO farkını yeniden hesaplar.', feeRateTitle: 'Tahmini ücret oranı', feeRateText: "CSV tutarının ücreti zaten içerip içermediğini kontrol et.", feeWarning: "Bu seçenek yalnızca tahmindir. Steam'in oyun ve ürün bazlı ücretleri değişebilir.",
             exportPreparing: 'Rapor hazırlanıyor…', exportError: 'Rapor oluşturulamadı. Sayfayı yenileyip tekrar deneyebilirsin.', exportComplete: 'Rapor indirildi.',
@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             guideStep3Title: 'Click Export .CSV file', guideStep3Text: 'Download your history using the export button added by the extension, then drop the file above.',
             securityTitle: 'Third-party extension notice',
             securityText: 'Steam Inventory Helper is not owned by Valve, Steam or MarketMemento and may request broad permissions for Steam sites, tabs or cookies. Review its current permissions, publisher and privacy policy before installing. Use only the official store link, never enter your password into an extension screen, and consider disabling it after exporting the CSV.',
-            dashboardEyebrow: 'File summary', dashboardTitle: 'Your market history', newFile: 'New file', addFiles: 'Add CSV', calculationButton: 'Calculation', installApp: 'Install app',
+            dashboardEyebrow: 'File summary', dashboardTitle: 'Your market history', newFile: 'New file', addFiles: 'Add CSV', calculationButton: 'Settings', installApp: 'Install app',
             exportHint: 'PNG and PDF include the currently open analysis tab.',
             gameFilter: 'Game', allGames: 'All games', itemFilter: 'Find an item', itemPlaceholder: 'Item name...', dateFrom: 'From', dateTo: 'To', clearFilters: 'Clear filters',
             tabOverview: 'Overview', tabGames: 'Games', tabProfit: 'Purchases / sales', tabActivity: 'Activity',
@@ -134,14 +134,14 @@ document.addEventListener('DOMContentLoaded', () => {
             statusStorageWarning: 'The summary is ready, but the data could not be saved in browser storage.',
             statusMerged: 'CSV files merged', statusDuplicates: 'duplicate records skipped', statusFilesFailed: 'files could not be read',
             rows: 'records', filteredRows: 'filtered records', demoData: 'Sample data', matchedSales: 'matched sales', unmatchedPurchases: 'unmatched purchases', invalidDates: 'records have unreadable dates',
-            summaryProfit: 'Realized difference', summarySales: 'Sales volume', summaryGrossSales: 'Gross sales volume', summaryPurchases: 'Purchase volume', summaryFees: 'Estimated fees', summaryTransactions: 'Transactions', disabled: 'Off',
+            summaryProfit: 'Realized difference', summarySales: 'Sales volume', summaryGrossSales: 'Gross sales volume', summaryPurchases: 'Purchase volume', summaryFees: 'Estimated fees', summaryTransactions: 'Transactions',
             importFiles: 'CSV files', importAccepted: 'accepted records', importDuplicates: 'duplicates skipped', importInvalidDates: 'unreadable dates', importReportLabel: 'Import summary',
             chartTimeline: 'Monthly transaction activity', chartTypes: 'Purchase / sale split', chartProfit: 'Most profitable items', chartLoss: 'Largest item losses',
             purchases: 'Purchases', sales: 'Sales', net: 'Net', noData: 'There is no data to show for this filter.',
             gameTableTitle: 'Game summary', profitTableTitle: 'FIFO purchase / sale matches', searchTable: 'Search table…',
             colGame: 'Game', colTransactions: 'Transactions', colSpent: 'Purchases', colEarned: 'Sales', colCashflow: 'Cash flow',
             colItem: 'Item', colMatched: 'Matched', colAvgBuy: 'Avg. buy', colAvgSell: 'Avg. sale', colRoi: 'ROI', colNet: 'Net',
-            heatmapKicker: 'Day and time', heatmapTitle: 'Activity heatmap', heatmapCell: 'transactions', yearComparison: 'Monthly activity by year',
+            heatmapKicker: 'Day and time', heatmapKickerMonths: 'Day and month', heatmapTitle: 'Activity heatmap', heatmapCell: 'transactions', yearComparison: 'Monthly activity by year',
             calculationKicker: 'Display settings', calculationTitle: 'Calculation preferences', currencyTitle: 'CSV currency', currencyText: 'No conversion is made; values are only displayed with the selected symbol.',
             feeTitle: 'Apply fee estimate', feeText: 'Recalculates the FIFO difference after subtracting your chosen rate from sale values.', feeRateTitle: 'Estimated fee rate', feeRateText: 'Check whether your CSV values already include fees.', feeWarning: 'This option is only an estimate. Steam fees can vary by game and item.',
             exportPreparing: 'Preparing report…', exportError: 'The report could not be created. Refresh the page and try again.', exportComplete: 'Report downloaded.',
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         invalidDateCount: 0,
         duplicatesRemoved: 0,
         currency: localStorage.getItem('currency') || 'USD',
-        applyFees: localStorage.getItem('applyFees') === 'true',
+        applyFees: localStorage.getItem('applyFees') === null ? true : localStorage.getItem('applyFees') === 'true',
         feeRate: Math.min(40, Math.max(0, Number(localStorage.getItem('feeRate') || 15)))
     };
 
@@ -179,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
         exportPDF: document.getElementById('export-pdf'),
         exportOverlay: document.getElementById('export-overlay'),
         currencySelect: document.getElementById('currency-select'),
+        quickCurrencySelect: document.getElementById('quick-currency-select'),
         feeToggle: document.getElementById('fee-toggle'),
         feeRate: document.getElementById('fee-rate'),
         themeSwitcher: document.getElementById('theme-switcher'),
@@ -190,7 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
         dateTo: document.getElementById('date-to'),
         clearFilters: document.getElementById('clear-filters'),
         datasetMeta: document.getElementById('dataset-meta'),
-        activityHeatmap: document.getElementById('activity-heatmap')
+        activityHeatmap: document.getElementById('activity-heatmap'),
+        heatmapKicker: document.getElementById('heatmap-kicker'),
+        heatmapTooltip: document.getElementById('heatmap-tooltip')
     };
 
     const t = key => translations[state.lang][key] || key;
@@ -208,10 +211,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
             element.placeholder = t(element.dataset.i18nPlaceholder);
         });
+        document.querySelectorAll('[data-i18n-title]').forEach(element => {
+            element.title = t(element.dataset.i18nTitle);
+        });
         elements.langTR.classList.toggle('active', lang === 'tr');
         elements.langTR.setAttribute('aria-pressed', String(lang === 'tr'));
         elements.langEN.classList.toggle('active', lang === 'en');
         elements.langEN.setAttribute('aria-pressed', String(lang === 'en'));
+        elements.quickCurrencySelect.setAttribute('aria-label', t('currencyTitle'));
         refreshAllGamesLabel();
         if (state.data.length) renderDashboard();
     }
@@ -220,7 +227,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.documentElement.setAttribute('data-bs-theme', theme);
         localStorage.setItem('theme', theme);
         elements.themeSwitcher.innerHTML = theme === 'dark' ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon-stars"></i>';
-        Object.values(state.charts).forEach(chart => chart?.updateOptions?.({ theme: { mode: theme } }));
+        const rootStyles = getComputedStyle(document.documentElement);
+        Object.values(state.charts).forEach(chart => chart?.updateOptions?.({
+            chart: { background: 'transparent', foreColor: rootStyles.getPropertyValue('--muted').trim() },
+            grid: { borderColor: rootStyles.getPropertyValue('--line-strong').trim() },
+            theme: { mode: theme },
+            tooltip: { theme }
+        }, false, false));
     }
 
     function showStatus(message, type = '') {
@@ -322,6 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     _type: normaliseType(row.Type),
                     _price: priceInCents(row),
                     _date: parsedDate?.toISOString() || null,
+                    _hasTime: marketDateHasTime(row['Acted On']),
                     _index: index
                 };
             })
@@ -512,6 +526,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }).format(value);
     }
 
+    function updateCurrency(currency) {
+        const supported = ['USD', 'TRY', 'EUR', 'GBP', 'CNY', 'JPY'];
+        state.currency = supported.includes(currency) ? currency : 'USD';
+        elements.currencySelect.value = state.currency;
+        elements.quickCurrencySelect.value = state.currency;
+        localStorage.setItem('currency', state.currency);
+        if (state.data.length) renderDashboard();
+    }
+
     function formatPercent(value) {
         return `${value.toLocaleString(state.lang === 'tr' ? 'tr-TR' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
     }
@@ -571,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
             { label: t('summaryProfit'), value: formatMoney(summary.realisedProfit), icon: 'bi-graph-up-arrow', tone: summary.realisedProfit >= 0 ? 'positive' : 'negative' },
             { label: t(state.applyFees ? 'summaryGrossSales' : 'summarySales'), value: formatMoney(summary.totalSold), icon: 'bi-arrow-up-right-circle', tone: '' },
             { label: t('summaryPurchases'), value: formatMoney(summary.totalPurchased), icon: 'bi-arrow-down-left-circle', tone: '' },
-            { label: t('summaryFees'), value: state.applyFees ? formatMoney(summary.totalFees) : t('disabled'), icon: 'bi-percent', tone: '' },
+            { label: t('summaryFees'), value: formatMoney(summary.totalFees), icon: 'bi-percent', tone: '' },
             { label: t('summaryTransactions'), value: summary.transactions.toLocaleString(state.lang), icon: 'bi-receipt', tone: '' }
         ];
         const container = document.getElementById('summary-cards');
@@ -686,15 +709,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderActivity(analysis) {
         const locale = state.lang === 'tr' ? 'tr-TR' : 'en-US';
+        const monthLabels = Array.from({ length: 12 }, (_, month) => new Intl.DateTimeFormat(locale, { month: 'short' }).format(new Date(2026, month, 1)));
+        const usesMonths = analysis.activityMode === 'month';
+        const columnCount = usesMonths ? 12 : 24;
         const grid = document.createElement('div');
         grid.className = 'heatmap-grid';
+        grid.classList.toggle('by-month', usesMonths);
+        grid.style.setProperty('--heatmap-columns', columnCount);
+        elements.heatmapKicker.textContent = t(usesMonths ? 'heatmapKickerMonths' : 'heatmapKicker');
         const corner = document.createElement('span');
         corner.className = 'heatmap-label';
         grid.appendChild(corner);
-        for (let hour = 0; hour < 24; hour += 1) {
+        for (let column = 0; column < columnCount; column += 1) {
             const label = document.createElement('span');
             label.className = 'heatmap-label heatmap-hour';
-            label.textContent = hour % 3 === 0 ? String(hour).padStart(2, '0') : '';
+            label.textContent = usesMonths ? monthLabels[column] : (column % 3 === 0 ? String(column).padStart(2, '0') : '');
             grid.appendChild(label);
         }
 
@@ -706,18 +735,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const referenceDate = new Date(2026, 0, 4 + dayIndex);
             dayLabel.textContent = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(referenceDate);
             grid.appendChild(dayLabel);
-            analysis.activity[dayIndex].forEach((count, hour) => {
+            analysis.activity[dayIndex].forEach((count, column) => {
                 const cell = document.createElement('span');
                 cell.className = 'heatmap-cell';
                 cell.dataset.level = count && maxCount ? String(Math.max(1, Math.ceil((count / maxCount) * 4))) : '0';
-                cell.title = `${dayLabel.textContent} ${String(hour).padStart(2, '0')}:00 · ${count.toLocaleString(state.lang)} ${t('heatmapCell')}`;
-                cell.setAttribute('aria-label', cell.title);
+                const positionLabel = usesMonths ? monthLabels[column] : `${String(column).padStart(2, '0')}:00`;
+                const tooltipText = `${dayLabel.textContent} · ${positionLabel} · ${count.toLocaleString(state.lang)} ${t('heatmapCell')}`;
+                cell.dataset.tooltip = tooltipText;
+                cell.setAttribute('aria-label', tooltipText);
+                cell.setAttribute('role', 'img');
+                cell.tabIndex = 0;
+                cell.addEventListener('mouseenter', () => showHeatmapTooltip(cell));
+                cell.addEventListener('focus', () => showHeatmapTooltip(cell));
+                cell.addEventListener('mouseleave', hideHeatmapTooltip);
+                cell.addEventListener('blur', hideHeatmapTooltip);
                 grid.appendChild(cell);
             });
         });
         elements.activityHeatmap.replaceChildren(grid);
 
-        const monthLabels = Array.from({ length: 12 }, (_, month) => new Intl.DateTimeFormat(locale, { month: 'short' }).format(new Date(2026, month, 1)));
         renderChart('year-comparison-chart', {
             series: analysis.yearSeries,
             chart: { type: 'line', height: 330 },
@@ -729,6 +765,27 @@ document.addEventListener('DOMContentLoaded', () => {
             title: { text: t('yearComparison'), style: { fontFamily: 'Space Grotesk', fontSize: '16px', fontWeight: 600 } },
             legend: { position: 'top', horizontalAlign: 'right' }
         });
+    }
+
+    function showHeatmapTooltip(cell) {
+        const text = cell.dataset.tooltip;
+        if (!text) return;
+        elements.heatmapTooltip.textContent = text;
+        elements.heatmapTooltip.hidden = false;
+        const cellRect = cell.getBoundingClientRect();
+        const tooltipRect = elements.heatmapTooltip.getBoundingClientRect();
+        const left = Math.min(
+            window.innerWidth - tooltipRect.width - 10,
+            Math.max(10, cellRect.left + (cellRect.width - tooltipRect.width) / 2)
+        );
+        let top = cellRect.top - tooltipRect.height - 9;
+        if (top < 10) top = cellRect.bottom + 9;
+        elements.heatmapTooltip.style.left = `${left}px`;
+        elements.heatmapTooltip.style.top = `${top}px`;
+    }
+
+    function hideHeatmapTooltip() {
+        elements.heatmapTooltip.hidden = true;
     }
 
     function shorten(value, length) {
@@ -1050,11 +1107,8 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.langTR.addEventListener('click', () => setLanguage('tr'));
     elements.langEN.addEventListener('click', () => setLanguage('en'));
     elements.themeSwitcher.addEventListener('click', () => setTheme(document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark'));
-    elements.currencySelect.addEventListener('change', () => {
-        state.currency = elements.currencySelect.value;
-        localStorage.setItem('currency', state.currency);
-        if (state.data.length) renderDashboard();
-    });
+    elements.currencySelect.addEventListener('change', () => updateCurrency(elements.currencySelect.value));
+    elements.quickCurrencySelect.addEventListener('change', () => updateCurrency(elements.quickCurrencySelect.value));
     elements.feeToggle.addEventListener('change', () => {
         state.applyFees = elements.feeToggle.checked;
         elements.feeRate.disabled = !state.applyFees;
@@ -1099,11 +1153,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
 
     elements.currencySelect.value = state.currency;
+    elements.quickCurrencySelect.value = state.currency;
     elements.feeToggle.checked = state.applyFees;
     elements.feeRate.value = String(state.feeRate);
     elements.feeRate.disabled = !state.applyFees;
     setTheme(localStorage.getItem('theme') === 'light' ? 'light' : 'dark');
     setLanguage(state.lang);
+    elements.activityHeatmap.addEventListener('scroll', hideHeatmapTooltip, { passive: true });
+    window.addEventListener('scroll', hideHeatmapTooltip, { passive: true, capture: true });
+    window.addEventListener('resize', hideHeatmapTooltip, { passive: true });
     void restoreDataset();
     window.addEventListener('beforeinstallprompt', event => {
         event.preventDefault();

@@ -12,7 +12,7 @@
     <link href="vendor/fonts/fonts.css" rel="stylesheet">
     <link href="vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="styles.css?v=11" rel="stylesheet">
+    <link href="styles.css?v=13" rel="stylesheet">
 </head>
 <body>
     <div class="ambient" aria-hidden="true">
@@ -25,7 +25,7 @@
     <main class="site-shell">
         <header class="topbar glass-panel">
             <a class="brand" href="#" aria-label="MarketMemento ana sayfa">
-                <span class="brand-mark"><i class="bi bi-steam"></i></span>
+                <span class="brand-mark"><img src="icon.svg" alt="" aria-hidden="true"></span>
                 <span>
                     <strong>Market<span>Memento</span></strong>
                     <small data-i18n="brandSubtitle">CSV geçmiş görüntüleyici</small>
@@ -93,6 +93,14 @@
                     <i class="bi bi-compass guide-icon"></i>
                 </div>
 
+                <aside class="security-note">
+                    <i class="bi bi-shield-exclamation"></i>
+                    <div>
+                        <strong data-i18n="securityTitle">Üçüncü taraf eklenti uyarısı</strong>
+                        <p data-i18n="securityText">Steam Inventory Helper; Valve, Steam veya MarketMemento'ya ait değildir ve Steam siteleri, sekmeler ya da çerezler için geniş izinler isteyebilir. Kurmadan önce güncel izinleri, geliştiriciyi ve gizlilik politikasını incele. Yalnızca resmi mağaza bağlantısını kullan; şifreni eklenti ekranlarına girme ve istersen CSV'yi aldıktan sonra eklentiyi devre dışı bırak.</p>
+                    </div>
+                </aside>
+
                 <div class="guide-steps">
                     <article class="guide-step">
                         <span>1</span>
@@ -123,13 +131,6 @@
                     </article>
                 </div>
 
-                <aside class="security-note">
-                    <i class="bi bi-shield-exclamation"></i>
-                    <div>
-                        <strong data-i18n="securityTitle">Üçüncü taraf eklenti uyarısı</strong>
-                        <p data-i18n="securityText">Steam Inventory Helper; Valve, Steam veya MarketMemento'ya ait değildir ve Steam siteleri, sekmeler ya da çerezler için geniş izinler isteyebilir. Kurmadan önce güncel izinleri, geliştiriciyi ve gizlilik politikasını incele. Yalnızca resmi mağaza bağlantısını kullan; şifreni eklenti ekranlarına girme ve istersen CSV'yi aldıktan sonra eklentiyi devre dışı bırak.</p>
-                    </div>
-                </aside>
             </div>
         </section>
 
@@ -145,6 +146,17 @@
                         <input type="file" id="merge-file-input" accept=".csv,text/csv" multiple hidden>
                         <label for="merge-file-input" class="secondary-button action-label" title="CSV ekle">
                             <i class="bi bi-file-earmark-plus"></i> <span data-i18n="addFiles">CSV ekle</span>
+                        </label>
+                        <label class="quick-currency" for="quick-currency-select" data-i18n-title="currencyTitle" title="CSV para birimi">
+                            <i class="bi bi-currency-exchange" aria-hidden="true"></i>
+                            <select id="quick-currency-select" aria-label="CSV para birimi">
+                                <option value="USD">USD</option>
+                                <option value="TRY">TRY</option>
+                                <option value="EUR">EUR</option>
+                                <option value="GBP">GBP</option>
+                                <option value="CNY">CNY</option>
+                                <option value="JPY">JPY</option>
+                            </select>
                         </label>
                         <button type="button" id="calculation-button" class="secondary-button" data-bs-toggle="modal" data-bs-target="#calculation-modal">
                             <i class="bi bi-sliders"></i> <span data-i18n="calculationButton">Hesaplama</span>
@@ -220,7 +232,7 @@
                     <div class="activity-grid">
                         <div class="activity-card">
                             <div class="section-heading">
-                                <div><span class="mini-kicker" data-i18n="heatmapKicker">Gün ve saat</span><h2 data-i18n="heatmapTitle">Aktivite ısı haritası</h2></div>
+                                <div><span id="heatmap-kicker" class="mini-kicker" data-i18n="heatmapKicker">Gün ve saat</span><h2 data-i18n="heatmapTitle">Aktivite ısı haritası</h2></div>
                                 <span class="heatmap-legend" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
                             </div>
                             <div id="activity-heatmap" class="heatmap-wrap"></div>
@@ -296,12 +308,14 @@
         <div class="glass-panel"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span data-i18n="exportPreparing">Rapor hazırlanıyor…</span></div>
     </div>
 
+    <div id="heatmap-tooltip" class="heatmap-tooltip" role="tooltip" hidden></div>
+
     <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script>
     <script src="vendor/apexcharts/apexcharts.min.js"></script>
     <script src="vendor/papaparse/papaparse.min.js"></script>
     <script src="vendor/html2canvas/html2canvas.min.js"></script>
     <script src="vendor/jspdf/jspdf.umd.min.js"></script>
     <script src="core.js"></script>
-    <script src="app.js?v=11"></script>
+    <script src="app.js?v=13"></script>
 </body>
 </html>

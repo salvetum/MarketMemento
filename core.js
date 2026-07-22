@@ -32,6 +32,12 @@
         return Number.parseInt(raw, 10) || 0;
     }
 
+    function marketDateHasTime(value) {
+        const source = String(value || '').trim();
+        if (/^\d{10,13}$/.test(source)) return true;
+        return /(?:^|[T\s@,])(\d{1,2}):(\d{2})(?::\d{2})?\s*(?:am|pm)?\b/i.test(source);
+    }
+
     function parseMarketDate(value, referenceDate = new Date()) {
         const source = String(value || '').replace(/\u00a0/g, ' ').trim();
         if (!source) return null;
@@ -176,15 +182,21 @@
         const gameStats = [...gameMap.values()].map(game => ({ ...game, cashflow: game.earned - game.spent }));
 
         const monthly = new Map();
-        const activity = Array.from({ length: 7 }, () => Array(24).fill(0));
+        const hourlyActivity = Array.from({ length: 7 }, () => Array(24).fill(0));
+        const monthlyActivity = Array.from({ length: 7 }, () => Array(12).fill(0));
+        let timedRows = 0;
+        let datedRows = 0;
         const years = new Map();
         data.forEach(row => {
             if (!row._date) return;
+            datedRows += 1;
             const date = new Date(row._date);
             const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             if (!monthly.has(key)) monthly.set(key, { date, purchase: 0, sale: 0 });
             monthly.get(key)[row._type] += 1;
-            activity[date.getDay()][date.getHours()] += 1;
+            hourlyActivity[date.getDay()][date.getHours()] += 1;
+            monthlyActivity[date.getDay()][date.getMonth()] += 1;
+            if (row._hasTime ?? marketDateHasTime(row['Acted On'])) timedRows += 1;
             if (!years.has(date.getFullYear())) years.set(date.getFullYear(), Array(12).fill(0));
             years.get(date.getFullYear())[date.getMonth()] += 1;
         });
@@ -193,6 +205,7 @@
         const realisedProfit = profitAnalysis.reduce((sum, item) => sum + item.net, 0);
         const matchedCount = profitAnalysis.reduce((sum, item) => sum + item.matched, 0);
         const unmatchedCount = [...byItem.values()].reduce((sum, item) => sum + item.queue.length, 0);
+        const hasCompleteTimeData = datedRows > 0 && timedRows === datedRows;
 
         return {
             summary: { realisedProfit, totalSold, totalPurchased, totalFees, transactions: data.length },
@@ -202,10 +215,11 @@
             timeline,
             matchedCount,
             unmatchedCount,
-            activity,
+            activity: hasCompleteTimeData ? hourlyActivity : monthlyActivity,
+            activityMode: hasCompleteTimeData ? 'hour' : 'month',
             yearSeries: [...years.entries()].sort(([left], [right]) => left - right).map(([year, values]) => ({ name: String(year), data: values }))
         };
     }
 
-    return { normaliseType, priceInCents, parseMarketDate, rowFingerprint, deduplicateRows, analyseMarketData };
+    return { normaliseType, priceInCents, parseMarketDate, marketDateHasTime, rowFingerprint, deduplicateRows, analyseMarketData };
 }));
