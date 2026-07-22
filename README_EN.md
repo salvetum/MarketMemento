@@ -47,7 +47,7 @@ Explore market activity, games, and FIFO results without sending your data away 
 - Remove duplicate records and display an import summary
 - Filter by game, item, and date
 - Match purchases and sales using a FIFO approach
-- Optional fee estimation and currency conversion using a daily reference rate
+- Per-row currency detection and conversion using a daily reference rate
 - Monthly activity, game summary, and year comparison charts
 - Activity heatmap by day and hour
 - Export tables as CSV or JSON
@@ -93,7 +93,8 @@ Market Name,Price in Cents,Type
 
 - Realized difference is estimated with **FIFO**, matching sales against the oldest available purchases.
 - The fee option subtracts a user-defined rate from sales and is not an official Steam fee calculator.
-- CSV currency and display currency can be selected separately. Amounts use Frankfurter's latest daily reference rate rather than the historical rate from each transaction date.
+- Currency is detected from the code or symbol in each row's `Display Price`, allowing mixed currencies such as USD and TRY in one file. A fallback CSV currency can be selected for unmarked rows.
+- Amounts use Frankfurter's latest daily reference rate rather than the historical rate from each transaction date.
 - Incomplete history or mixed currencies in one dataset can affect the results.
 - PNG and PDF reports include the analytics tab that is active at export time.
 

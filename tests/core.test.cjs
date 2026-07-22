@@ -4,6 +4,8 @@ const {
     normaliseType,
     priceInCents,
     convertAmount,
+    detectMarketCurrency,
+    convertMarketRows,
     parseMarketDate,
     marketDateHasTime,
     deduplicateRows,
@@ -20,6 +22,19 @@ test('işlem türü ve sent değeri normalize edilir', () => {
 test('para tutarı geçerli kurla dönüştürülür', () => {
     assert.equal(convertAmount(10, 47.195), 471.95);
     assert.equal(convertAmount(10, 0), 0);
+});
+
+test('Display Price para birimini algılar ve karışık satırları ayrı dönüştürür', () => {
+    assert.equal(detectMarketCurrency('$0.12 USD'), 'USD');
+    assert.equal(detectMarketCurrency('0,24 TL'), 'TRY');
+    assert.equal(detectMarketCurrency('€1.20'), 'EUR');
+    assert.equal(detectMarketCurrency('100'), '');
+    const converted = convertMarketRows([
+        { _price: 100, _currency: 'USD' },
+        { _price: 100, 'Display Price': '1,00 TL' }
+    ], 'TRY', { USD: 47.195, TRY: 1 });
+    assert.deepEqual(converted.map(row => row._price), [4719.5, 100]);
+    assert.equal(converted.some(row => row._conversionMissing), false);
 });
 
 test('İngilizce ve Türkçe tarihler saatleriyle ayrıştırılır', () => {

@@ -38,6 +38,32 @@
         return Number.isFinite(amount) && Number.isFinite(multiplier) && multiplier > 0 ? amount * multiplier : 0;
     }
 
+    function detectMarketCurrency(value) {
+        const source = String(value || '').replace(/\u00a0/g, ' ').trim().toUpperCase();
+        if (!source) return '';
+        const code = source.match(/(?:^|\s)(USD|EUR|GBP|CNY|JPY|TRY|TL)(?:\s|$)/)?.[1];
+        if (code) return code === 'TL' ? 'TRY' : code;
+        if (source.includes('₺')) return 'TRY';
+        if (source.includes('€')) return 'EUR';
+        if (source.includes('£')) return 'GBP';
+        if (source.includes('$')) return 'USD';
+        return '';
+    }
+
+    function convertMarketRows(rows, targetCurrency, rates = {}, fallbackCurrency = 'USD') {
+        return (rows || []).map(row => {
+            const sourceCurrency = row._currency || detectMarketCurrency(row['Display Price']) || fallbackCurrency;
+            const rate = sourceCurrency === targetCurrency ? 1 : Number(rates[sourceCurrency]);
+            const hasRate = Number.isFinite(rate) && rate > 0;
+            return {
+                ...row,
+                _price: hasRate ? convertAmount(row._price, rate) : row._price,
+                _sourceCurrency: sourceCurrency,
+                _conversionMissing: !hasRate
+            };
+        });
+    }
+
     function marketDateHasTime(value) {
         const source = String(value || '').trim();
         if (/^\d{10,13}$/.test(source)) return true;
@@ -227,5 +253,5 @@
         };
     }
 
-    return { normaliseType, priceInCents, convertAmount, parseMarketDate, marketDateHasTime, rowFingerprint, deduplicateRows, analyseMarketData };
+    return { normaliseType, priceInCents, convertAmount, detectMarketCurrency, convertMarketRows, parseMarketDate, marketDateHasTime, rowFingerprint, deduplicateRows, analyseMarketData };
 }));

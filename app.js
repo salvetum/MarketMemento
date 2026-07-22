@@ -58,7 +58,7 @@ window.addEventListener('load', () => window.setTimeout(probeFrameRate, 1600), {
 document.addEventListener('DOMContentLoaded', () => {
     'use strict';
 
-    const { normaliseType, priceInCents, convertAmount, parseMarketDate, marketDateHasTime, deduplicateRows, analyseMarketData } = window.MarketMementoCore;
+    const { normaliseType, priceInCents, detectMarketCurrency, convertMarketRows, parseMarketDate, marketDateHasTime, deduplicateRows, analyseMarketData } = window.MarketMementoCore;
 
     const translations = {
         tr: {
@@ -99,8 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
             colGame: 'Oyun', colTransactions: 'İşlem', colSpent: 'Alış', colEarned: 'Satış', colCashflow: 'Nakit akışı',
             colItem: 'Ürün', colMatched: 'Eşleşme', colAvgBuy: 'Ort. alış', colAvgSell: 'Ort. satış', colRoi: 'ROI', colNet: 'Net',
             heatmapKicker: 'Gün ve saat', heatmapKickerMonths: 'Gün ve ay', heatmapTitle: 'Aktivite ısı haritası', heatmapCell: 'işlem', yearComparison: 'Yıllara göre aylık işlemler',
-            calculationKicker: 'Görünüm ayarları', calculationTitle: 'Hesaplama tercihleri', sourceCurrencyTitle: 'CSV para birimi', sourceCurrencyText: 'Dosyadaki tutarların ait olduğu para birimini seç.', currencyTitle: 'Görüntüleme para birimi', currencyText: 'Tutarları günlük referans kuruyla dönüştürür; CSV verin gönderilmez.',
-            exchangeSame: 'Dönüşüm gerekmiyor.', exchangeLoading: 'Güncel kur alınıyor…', exchangeLive: 'Güncel referans kuru', exchangeCached: 'Son kayıtlı referans kuru', exchangeError: 'Kur alınamadı; tutarlar CSV para biriminde gösteriliyor.',
+            calculationKicker: 'Görünüm ayarları', calculationTitle: 'Hesaplama tercihleri', sourceCurrencyTitle: 'Yedek CSV para birimi', sourceCurrencyText: 'Display Price alanında para birimi bulunamayan kayıtlar için kullanılır.', currencyTitle: 'Görüntüleme para birimi', currencyText: 'Her satırın para birimini otomatik algılar ve günlük referans kuruyla dönüştürür; CSV verin gönderilmez.',
+            exchangeSame: 'Dönüşüm gerekmiyor.', exchangeLoading: 'Güncel kurlar alınıyor…', exchangeLive: 'Güncel referans kurları', exchangeCached: 'Son kayıtlı referans kurları', exchangeError: 'Bazı kurlar alınamadı; ilgili tutarlar dönüştürülemedi.', exchangeDetected: 'Algılanan', exchangeFallback: 'işaretsiz', missingCurrencyCount: 'işaretsiz kayıt',
             feeTitle: 'Ücret tahmini uygula', feeText: 'Satış tutarından belirlediğin oranı düşerek FIFO farkını yeniden hesaplar.', feeRateTitle: 'Tahmini ücret oranı', feeRateText: "CSV tutarının ücreti zaten içerip içermediğini kontrol et.", feeWarning: "Bu seçenek yalnızca tahmindir. Steam'in oyun ve ürün bazlı ücretleri değişebilir.",
             exportPreparing: 'Rapor hazırlanıyor…', exportError: 'Rapor oluşturulamadı. Sayfayı yenileyip tekrar deneyebilirsin.', exportComplete: 'Rapor indirildi.',
             uploadName: 'Yüklenen dosya', multipleFiles: 'CSV dosyası'
@@ -143,8 +143,8 @@ document.addEventListener('DOMContentLoaded', () => {
             colGame: 'Game', colTransactions: 'Transactions', colSpent: 'Purchases', colEarned: 'Sales', colCashflow: 'Cash flow',
             colItem: 'Item', colMatched: 'Matched', colAvgBuy: 'Avg. buy', colAvgSell: 'Avg. sale', colRoi: 'ROI', colNet: 'Net',
             heatmapKicker: 'Day and time', heatmapKickerMonths: 'Day and month', heatmapTitle: 'Activity heatmap', heatmapCell: 'transactions', yearComparison: 'Monthly activity by year',
-            calculationKicker: 'Display settings', calculationTitle: 'Calculation preferences', sourceCurrencyTitle: 'CSV currency', sourceCurrencyText: 'Choose the currency used by the amounts in the file.', currencyTitle: 'Display currency', currencyText: 'Converts amounts using a daily reference rate; your CSV data is not sent.',
-            exchangeSame: 'No conversion is needed.', exchangeLoading: 'Fetching the latest rate…', exchangeLive: 'Current reference rate', exchangeCached: 'Last saved reference rate', exchangeError: 'The rate could not be fetched; amounts are shown in the CSV currency.',
+            calculationKicker: 'Display settings', calculationTitle: 'Calculation preferences', sourceCurrencyTitle: 'Fallback CSV currency', sourceCurrencyText: 'Used only for records without a currency in Display Price.', currencyTitle: 'Display currency', currencyText: 'Detects each row’s currency and converts it using daily reference rates; your CSV data is not sent.',
+            exchangeSame: 'No conversion is needed.', exchangeLoading: 'Fetching the latest rates…', exchangeLive: 'Current reference rates', exchangeCached: 'Last saved reference rates', exchangeError: 'Some rates could not be fetched; the affected amounts could not be converted.', exchangeDetected: 'Detected', exchangeFallback: 'unmarked', missingCurrencyCount: 'unmarked records',
             feeTitle: 'Apply fee estimate', feeText: 'Recalculates the FIFO difference after subtracting your chosen rate from sale values.', feeRateTitle: 'Estimated fee rate', feeRateText: 'Check whether your CSV values already include fees.', feeWarning: 'This option is only an estimate. Steam fees can vary by game and item.',
             exportPreparing: 'Preparing report…', exportError: 'The report could not be created. Refresh the page and try again.', exportComplete: 'Report downloaded.',
             uploadName: 'Uploaded file', multipleFiles: 'CSV files'
@@ -165,8 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
         duplicatesRemoved: 0,
         sourceCurrency: supportedCurrencies.includes(savedSourceCurrency) ? savedSourceCurrency : 'USD',
         currency: supportedCurrencies.includes(savedCurrency) ? savedCurrency : 'USD',
-        exchangeRate: 1,
-        exchangeRateDate: '',
+        exchangeRates: {},
+        exchangeRateDates: {},
         exchangeRateState: 'loading',
         exchangeRequestId: 0,
         applyFees: localStorage.getItem('applyFees') === null ? true : localStorage.getItem('applyFees') === 'true',
@@ -347,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Game Name': String(row['Game Name'] || 'Steam Market').trim() || 'Steam Market',
                     _type: normaliseType(row.Type),
                     _price: priceInCents(row),
+                    _currency: detectMarketCurrency(row['Display Price']),
                     _date: parsedDate?.toISOString() || null,
                     _hasTime: marketDateHasTime(row['Acted On']),
                     _index: index
@@ -400,6 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const stored = await persistDataset();
         showStatus('');
+        await refreshExchangeRates({ render: false });
         openDashboard();
         const details = [
             `${state.fileNames.length.toLocaleString(state.lang)} ${t('multipleFiles')}`,
@@ -429,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
         return entries.map((entry, index) => ({
             'Market Name': entry[0], 'Game Name': entry[1], Type: entry[2], 'Price in Cents': String(entry[3]),
-            'Acted On': entry[4], _type: entry[2], _price: entry[3], _date: parseMarketDate(entry[4])?.toISOString() || null, _index: index
+            'Display Price': `$${(entry[3] / 100).toFixed(2)} USD`, 'Acted On': entry[4], _type: entry[2], _price: entry[3], _currency: 'USD', _date: parseMarketDate(entry[4])?.toISOString() || null, _index: index
         }));
     }
 
@@ -555,96 +557,126 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function effectiveCurrency() {
-        return ['same', 'live', 'cached'].includes(state.exchangeRateState) ? state.currency : state.sourceCurrency;
-    }
-
-    function convertMoney(value) {
-        const rate = ['same', 'live', 'cached'].includes(state.exchangeRateState) ? state.exchangeRate : 1;
-        return convertAmount(value, rate);
-    }
-
     function formatCurrencyValue(value) {
         return new Intl.NumberFormat(state.lang === 'tr' ? 'tr-TR' : 'en-US', {
-            style: 'currency', currency: effectiveCurrency(), currencyDisplay: 'symbol'
+            style: 'currency', currency: state.currency, currencyDisplay: 'symbol'
         }).format(value);
     }
 
     function formatMoney(value) {
-        return formatCurrencyValue(convertMoney(value));
+        return formatCurrencyValue(value);
+    }
+
+    function getCurrencySummary(data = state.data) {
+        const counts = new Map();
+        let unmarked = 0;
+        data.forEach(row => {
+            const currency = row._currency || detectMarketCurrency(row['Display Price']);
+            if (supportedCurrencies.includes(currency)) counts.set(currency, (counts.get(currency) || 0) + 1);
+            else unmarked += 1;
+        });
+        return { counts, unmarked };
+    }
+
+    function getSourceCurrencies() {
+        const summary = getCurrencySummary();
+        const currencies = [...summary.counts.keys()];
+        if (!state.data.length || summary.unmarked) currencies.push(state.sourceCurrency);
+        return [...new Set(currencies.filter(currency => supportedCurrencies.includes(currency)))];
+    }
+
+    function formatRate(value) {
+        return Number(value).toLocaleString(state.lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: 6 });
     }
 
     function updateExchangeRateStatus() {
         if (!elements.exchangeRateStatus) return;
-        if (state.sourceCurrency === state.currency) {
-            elements.exchangeRateStatus.textContent = t('exchangeSame');
-            return;
-        }
+        const summary = getCurrencySummary();
+        const detected = [...summary.counts.entries()].map(([currency, count]) => `${currency} (${count.toLocaleString(state.lang)})`);
+        if (summary.unmarked) detected.push(`${state.sourceCurrency} (${summary.unmarked.toLocaleString(state.lang)} ${t('exchangeFallback')})`);
+        const prefix = detected.length ? `${t('exchangeDetected')}: ${detected.join(', ')} · ` : '';
         if (state.exchangeRateState === 'loading') {
-            elements.exchangeRateStatus.textContent = t('exchangeLoading');
+            elements.exchangeRateStatus.textContent = `${prefix}${t('exchangeLoading')}`;
             return;
         }
         if (state.exchangeRateState === 'error') {
-            elements.exchangeRateStatus.textContent = t('exchangeError');
+            elements.exchangeRateStatus.textContent = `${prefix}${t('exchangeError')}`;
             return;
         }
-        const rate = state.exchangeRate.toLocaleString(state.lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: 6 });
-        const date = state.exchangeRateDate
-            ? new Intl.DateTimeFormat(state.lang === 'tr' ? 'tr-TR' : 'en-US', { dateStyle: 'medium' }).format(new Date(`${state.exchangeRateDate}T00:00:00`))
-            : '';
+        const conversions = getSourceCurrencies()
+            .filter(source => source !== state.currency && Number(state.exchangeRates[source]) > 0)
+            .map(source => `${source}→${state.currency}: ${formatRate(state.exchangeRates[source])}`);
+        if (!conversions.length) {
+            elements.exchangeRateStatus.textContent = `${prefix}${t('exchangeSame')}`;
+            return;
+        }
         const label = state.exchangeRateState === 'cached' ? t('exchangeCached') : t('exchangeLive');
-        elements.exchangeRateStatus.textContent = `${label}: 1 ${state.sourceCurrency} = ${rate} ${state.currency}${date ? ` · ${date}` : ''}`;
+        const dates = [...new Set(Object.values(state.exchangeRateDates).filter(Boolean))];
+        const date = dates.length === 1
+            ? new Intl.DateTimeFormat(state.lang === 'tr' ? 'tr-TR' : 'en-US', { dateStyle: 'medium' }).format(new Date(`${dates[0]}T00:00:00`))
+            : '';
+        elements.exchangeRateStatus.textContent = `${prefix}${label}: ${conversions.join(', ')}${date ? ` · ${date}` : ''}`;
     }
 
-    async function refreshExchangeRate({ render = true } = {}) {
-        const base = state.sourceCurrency;
+    async function refreshExchangeRates({ render = true } = {}) {
+        const sources = getSourceCurrencies();
         const quote = state.currency;
         const requestId = ++state.exchangeRequestId;
-        if (base === quote) {
-            state.exchangeRate = 1;
-            state.exchangeRateDate = '';
+        const rates = { [quote]: 1 };
+        const dates = {};
+        const conversions = sources.filter(source => source !== quote);
+
+        if (!conversions.length) {
+            state.exchangeRates = rates;
+            state.exchangeRateDates = dates;
             state.exchangeRateState = 'same';
             updateExchangeRateStatus();
             if (render && state.data.length) renderDashboard();
             return;
         }
 
-        const cached = readCachedExchangeRate(base, quote);
-        if (cached) {
-            state.exchangeRate = Number(cached.rate);
-            state.exchangeRateDate = String(cached.date || '');
-            state.exchangeRateState = 'cached';
-            updateExchangeRateStatus();
-            if (render && state.data.length) renderDashboard();
-        } else {
-            state.exchangeRate = 1;
-            state.exchangeRateDate = '';
-            state.exchangeRateState = 'loading';
-            updateExchangeRateStatus();
-            if (render && state.data.length) renderDashboard();
-        }
+        conversions.forEach(source => {
+            const cached = readCachedExchangeRate(source, quote);
+            if (!cached) return;
+            rates[source] = Number(cached.rate);
+            dates[source] = String(cached.date || '');
+        });
+        state.exchangeRates = rates;
+        state.exchangeRateDates = dates;
+        const allCached = conversions.every(source => Number(rates[source]) > 0);
+        state.exchangeRateState = allCached ? 'cached' : 'loading';
+        updateExchangeRateStatus();
+        if (allCached && render && state.data.length) renderDashboard();
 
-        try {
-            const response = await fetch(`https://api.frankfurter.dev/v2/rate/${base}/${quote}`, {
-                headers: { Accept: 'application/json' },
-                cache: 'no-store'
-            });
-            const payload = await response.json();
-            const rate = Number(payload.rate);
-            if (!response.ok || !Number.isFinite(rate) || rate <= 0) throw new Error('Invalid exchange rate');
-            if (requestId !== state.exchangeRequestId) return;
-            state.exchangeRate = rate;
-            state.exchangeRateDate = String(payload.date || '');
-            state.exchangeRateState = 'live';
-            saveExchangeRate(base, quote, rate, state.exchangeRateDate);
-        } catch (_) {
-            if (requestId !== state.exchangeRequestId) return;
-            state.exchangeRateState = cached ? 'cached' : 'error';
-            if (!cached) {
-                state.exchangeRate = 1;
-                state.exchangeRateDate = '';
-                if (state.data.length) showDashboardStatus(t('exchangeError'), 'warning');
+        const results = await Promise.all(conversions.map(async source => {
+            try {
+                const response = await fetch(`https://api.frankfurter.dev/v2/rate/${source}/${quote}`, {
+                    headers: { Accept: 'application/json' },
+                    cache: 'no-store'
+                });
+                const payload = await response.json();
+                const rate = Number(payload.rate);
+                if (!response.ok || !Number.isFinite(rate) || rate <= 0) throw new Error('Invalid exchange rate');
+                return { source, rate, date: String(payload.date || ''), ok: true };
+            } catch (_) {
+                return { source, ok: false };
             }
+        }));
+        if (requestId !== state.exchangeRequestId) return;
+        results.forEach(result => {
+            if (!result.ok) return;
+            rates[result.source] = result.rate;
+            dates[result.source] = result.date;
+            saveExchangeRate(result.source, quote, result.rate, result.date);
+        });
+        state.exchangeRates = rates;
+        state.exchangeRateDates = dates;
+        const missingRates = conversions.filter(source => !Number.isFinite(Number(rates[source])) || Number(rates[source]) <= 0);
+        if (missingRates.length) {
+            state.exchangeRateState = 'error';
+            if (state.data.length) showDashboardStatus(t('exchangeError'), 'warning');
+        } else {
+            state.exchangeRateState = results.every(result => result.ok) ? 'live' : 'cached';
         }
         updateExchangeRateStatus();
         if (render && state.data.length) renderDashboard();
@@ -655,14 +687,14 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.currencySelect.value = state.currency;
         elements.quickCurrencySelect.value = state.currency;
         localStorage.setItem('currency', state.currency);
-        void refreshExchangeRate();
+        void refreshExchangeRates();
     }
 
     function updateSourceCurrency(currency) {
         state.sourceCurrency = supportedCurrencies.includes(currency) ? currency : 'USD';
         elements.sourceCurrencySelect.value = state.sourceCurrency;
         localStorage.setItem('sourceCurrency', state.sourceCurrency);
-        void refreshExchangeRate();
+        void refreshExchangeRates();
     }
 
     function formatPercent(value) {
@@ -670,14 +702,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderDashboard() {
-        const data = filteredData();
+        const sourceData = filteredData();
+        const data = convertMarketRows(sourceData, state.currency, state.exchangeRates, state.sourceCurrency);
         const analysis = analyseMarketData(data, { applyFees: state.applyFees, feeRate: state.feeRate });
         const metaPrefix = state.demo
             ? t('demoData')
             : (state.fileNames.length > 1 ? `${state.fileNames.length.toLocaleString(state.lang)} ${t('multipleFiles')}` : (state.fileNames[0] || t('uploadName')));
-        const countLabel = data.length === state.data.length ? t('rows') : t('filteredRows');
+        const countLabel = sourceData.length === state.data.length ? t('rows') : t('filteredRows');
+        const currencySummary = getCurrencySummary(sourceData);
+        const currencyDetails = [...currencySummary.counts.entries()].map(([currency, count]) => `${currency} ${count.toLocaleString(state.lang)}`);
+        if (currencySummary.unmarked) currencyDetails.push(`${state.sourceCurrency} ${currencySummary.unmarked.toLocaleString(state.lang)} ${t('missingCurrencyCount')}`);
         const details = [
-            `${metaPrefix} · ${data.length.toLocaleString(state.lang)} ${countLabel}`,
+            `${metaPrefix} · ${sourceData.length.toLocaleString(state.lang)} ${countLabel}`,
+            currencyDetails.length ? currencyDetails.join(' / ') : '',
             `${analysis.matchedCount.toLocaleString(state.lang)} ${t('matchedSales')}`,
             `${analysis.unmatchedCount.toLocaleString(state.lang)} ${t('unmatchedPurchases')}`,
             state.duplicatesRemoved ? `${state.duplicatesRemoved.toLocaleString(state.lang)} ${t('statusDuplicates')}` : '',
@@ -820,7 +857,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const profits = [...analysis.profitAnalysis].filter(item => item.net > 0).sort((a, b) => b.net - a.net).slice(0, 6);
         const losses = [...analysis.profitAnalysis].filter(item => item.net < 0).sort((a, b) => a.net - b.net).slice(0, 6);
         renderChart('roi-profit-chart', {
-            series: [{ name: t('net'), data: profits.map(item => Number(convertMoney(item.net).toFixed(2))) }],
+            series: [{ name: t('net'), data: profits.map(item => Number(item.net.toFixed(2))) }],
             chart: { type: 'bar', height: 350 },
             colors: ['#57e6a5'],
             xaxis: { categories: profits.map(item => shorten(item.name, 30)), labels: { formatter: value => formatCurrencyValue(Number(value)) } },
@@ -829,7 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
             title: { text: t('chartProfit'), style: { fontFamily: 'Space Grotesk', fontSize: '16px', fontWeight: 600 } }
         });
         renderChart('roi-loss-chart', {
-            series: [{ name: t('net'), data: losses.map(item => Number(convertMoney(item.net).toFixed(2))) }],
+            series: [{ name: t('net'), data: losses.map(item => Number(item.net.toFixed(2))) }],
             chart: { type: 'bar', height: 350 },
             colors: ['#ff758a'],
             xaxis: { categories: losses.map(item => shorten(item.name, 30)), labels: { formatter: value => formatCurrencyValue(Number(value)) } },
@@ -1204,6 +1241,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.invalidDateCount = validation.invalidDateCount || payload.invalidDateCount || 0;
         state.duplicatesRemoved = Number(payload.duplicatesRemoved || 0) + deduped.duplicates;
         state.demo = false;
+        await refreshExchangeRates({ render: false });
         openDashboard({ scrollBehavior: 'auto' });
         requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
     }
@@ -1223,12 +1261,13 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.dropZone.classList.remove('dragover');
     }));
     elements.dropZone.addEventListener('drop', event => { void handleFiles(event.dataTransfer?.files); });
-    elements.demoButton.addEventListener('click', () => {
+    elements.demoButton.addEventListener('click', async () => {
         state.data = createDemoData();
         state.fileNames = [];
         state.demo = true;
         state.invalidDateCount = 0;
         state.duplicatesRemoved = 0;
+        await refreshExchangeRates({ render: false });
         openDashboard();
     });
     elements.resetButton.addEventListener('click', resetView);
@@ -1302,7 +1341,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('scroll', hideHeatmapTooltip, { passive: true, capture: true });
     window.addEventListener('resize', hideHeatmapTooltip, { passive: true });
     void (async () => {
-        await refreshExchangeRate({ render: false });
+        await refreshExchangeRates({ render: false });
         await restoreDataset();
     })();
     window.addEventListener('beforeinstallprompt', event => {
