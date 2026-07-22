@@ -58,7 +58,7 @@ window.addEventListener('load', () => window.setTimeout(probeFrameRate, 1600), {
 document.addEventListener('DOMContentLoaded', () => {
     'use strict';
 
-    const { normaliseType, priceInCents, parseMarketDate, marketDateHasTime, deduplicateRows, analyseMarketData } = window.MarketMementoCore;
+    const { normaliseType, priceInCents, convertAmount, parseMarketDate, marketDateHasTime, deduplicateRows, analyseMarketData } = window.MarketMementoCore;
 
     const translations = {
         tr: {
@@ -99,7 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
             colGame: 'Oyun', colTransactions: 'İşlem', colSpent: 'Alış', colEarned: 'Satış', colCashflow: 'Nakit akışı',
             colItem: 'Ürün', colMatched: 'Eşleşme', colAvgBuy: 'Ort. alış', colAvgSell: 'Ort. satış', colRoi: 'ROI', colNet: 'Net',
             heatmapKicker: 'Gün ve saat', heatmapKickerMonths: 'Gün ve ay', heatmapTitle: 'Aktivite ısı haritası', heatmapCell: 'işlem', yearComparison: 'Yıllara göre aylık işlemler',
-            calculationKicker: 'Görünüm ayarları', calculationTitle: 'Hesaplama tercihleri', currencyTitle: 'CSV para birimi', currencyText: 'Dönüşüm yapmaz; yalnızca tutarları seçtiğin simgeyle gösterir.',
+            calculationKicker: 'Görünüm ayarları', calculationTitle: 'Hesaplama tercihleri', sourceCurrencyTitle: 'CSV para birimi', sourceCurrencyText: 'Dosyadaki tutarların ait olduğu para birimini seç.', currencyTitle: 'Görüntüleme para birimi', currencyText: 'Tutarları günlük referans kuruyla dönüştürür; CSV verin gönderilmez.',
+            exchangeSame: 'Dönüşüm gerekmiyor.', exchangeLoading: 'Güncel kur alınıyor…', exchangeLive: 'Güncel referans kuru', exchangeCached: 'Son kayıtlı referans kuru', exchangeError: 'Kur alınamadı; tutarlar CSV para biriminde gösteriliyor.',
             feeTitle: 'Ücret tahmini uygula', feeText: 'Satış tutarından belirlediğin oranı düşerek FIFO farkını yeniden hesaplar.', feeRateTitle: 'Tahmini ücret oranı', feeRateText: "CSV tutarının ücreti zaten içerip içermediğini kontrol et.", feeWarning: "Bu seçenek yalnızca tahmindir. Steam'in oyun ve ürün bazlı ücretleri değişebilir.",
             exportPreparing: 'Rapor hazırlanıyor…', exportError: 'Rapor oluşturulamadı. Sayfayı yenileyip tekrar deneyebilirsin.', exportComplete: 'Rapor indirildi.',
             uploadName: 'Yüklenen dosya', multipleFiles: 'CSV dosyası'
@@ -142,7 +143,8 @@ document.addEventListener('DOMContentLoaded', () => {
             colGame: 'Game', colTransactions: 'Transactions', colSpent: 'Purchases', colEarned: 'Sales', colCashflow: 'Cash flow',
             colItem: 'Item', colMatched: 'Matched', colAvgBuy: 'Avg. buy', colAvgSell: 'Avg. sale', colRoi: 'ROI', colNet: 'Net',
             heatmapKicker: 'Day and time', heatmapKickerMonths: 'Day and month', heatmapTitle: 'Activity heatmap', heatmapCell: 'transactions', yearComparison: 'Monthly activity by year',
-            calculationKicker: 'Display settings', calculationTitle: 'Calculation preferences', currencyTitle: 'CSV currency', currencyText: 'No conversion is made; values are only displayed with the selected symbol.',
+            calculationKicker: 'Display settings', calculationTitle: 'Calculation preferences', sourceCurrencyTitle: 'CSV currency', sourceCurrencyText: 'Choose the currency used by the amounts in the file.', currencyTitle: 'Display currency', currencyText: 'Converts amounts using a daily reference rate; your CSV data is not sent.',
+            exchangeSame: 'No conversion is needed.', exchangeLoading: 'Fetching the latest rate…', exchangeLive: 'Current reference rate', exchangeCached: 'Last saved reference rate', exchangeError: 'The rate could not be fetched; amounts are shown in the CSV currency.',
             feeTitle: 'Apply fee estimate', feeText: 'Recalculates the FIFO difference after subtracting your chosen rate from sale values.', feeRateTitle: 'Estimated fee rate', feeRateText: 'Check whether your CSV values already include fees.', feeWarning: 'This option is only an estimate. Steam fees can vary by game and item.',
             exportPreparing: 'Preparing report…', exportError: 'The report could not be created. Refresh the page and try again.', exportComplete: 'Report downloaded.',
             uploadName: 'Uploaded file', multipleFiles: 'CSV files'
@@ -150,6 +152,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const requiredColumns = ['Market Name', 'Price in Cents', 'Type'];
+    const supportedCurrencies = ['USD', 'TRY', 'EUR', 'GBP', 'CNY', 'JPY'];
+    const savedCurrency = localStorage.getItem('currency');
+    const savedSourceCurrency = localStorage.getItem('sourceCurrency');
     const state = {
         data: [],
         charts: {},
@@ -158,7 +163,12 @@ document.addEventListener('DOMContentLoaded', () => {
         demo: false,
         invalidDateCount: 0,
         duplicatesRemoved: 0,
-        currency: localStorage.getItem('currency') || 'USD',
+        sourceCurrency: supportedCurrencies.includes(savedSourceCurrency) ? savedSourceCurrency : 'USD',
+        currency: supportedCurrencies.includes(savedCurrency) ? savedCurrency : 'USD',
+        exchangeRate: 1,
+        exchangeRateDate: '',
+        exchangeRateState: 'loading',
+        exchangeRequestId: 0,
         applyFees: localStorage.getItem('applyFees') === null ? true : localStorage.getItem('applyFees') === 'true',
         feeRate: Math.min(40, Math.max(0, Number(localStorage.getItem('feeRate') || 15)))
     };
@@ -178,8 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
         exportPNG: document.getElementById('export-png'),
         exportPDF: document.getElementById('export-pdf'),
         exportOverlay: document.getElementById('export-overlay'),
+        sourceCurrencySelect: document.getElementById('source-currency-select'),
         currencySelect: document.getElementById('currency-select'),
         quickCurrencySelect: document.getElementById('quick-currency-select'),
+        exchangeRateStatus: document.getElementById('exchange-rate-status'),
         feeToggle: document.getElementById('fee-toggle'),
         feeRate: document.getElementById('fee-rate'),
         themeSwitcher: document.getElementById('theme-switcher'),
@@ -219,6 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.langEN.classList.toggle('active', lang === 'en');
         elements.langEN.setAttribute('aria-pressed', String(lang === 'en'));
         elements.quickCurrencySelect.setAttribute('aria-label', t('currencyTitle'));
+        updateExchangeRateStatus();
         refreshAllGamesLabel();
         if (state.data.length) renderDashboard();
     }
@@ -520,19 +533,135 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function formatMoney(value) {
+    function exchangeCacheKey(base, quote) {
+        return `exchangeRate:${base}:${quote}`;
+    }
+
+    function readCachedExchangeRate(base, quote) {
+        try {
+            const cached = JSON.parse(localStorage.getItem(exchangeCacheKey(base, quote)) || 'null');
+            return cached && Number.isFinite(Number(cached.rate)) && Number(cached.rate) > 0 ? cached : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function saveExchangeRate(base, quote, rate, date) {
+        try {
+            localStorage.setItem(exchangeCacheKey(base, quote), JSON.stringify({ rate, date, savedAt: Date.now() }));
+        } catch (_) {
+            // The live rate still works when browser storage is unavailable.
+        }
+    }
+
+    function effectiveCurrency() {
+        return ['same', 'live', 'cached'].includes(state.exchangeRateState) ? state.currency : state.sourceCurrency;
+    }
+
+    function convertMoney(value) {
+        const rate = ['same', 'live', 'cached'].includes(state.exchangeRateState) ? state.exchangeRate : 1;
+        return convertAmount(value, rate);
+    }
+
+    function formatCurrencyValue(value) {
         return new Intl.NumberFormat(state.lang === 'tr' ? 'tr-TR' : 'en-US', {
-            style: 'currency', currency: state.currency, currencyDisplay: 'symbol'
+            style: 'currency', currency: effectiveCurrency(), currencyDisplay: 'symbol'
         }).format(value);
     }
 
+    function formatMoney(value) {
+        return formatCurrencyValue(convertMoney(value));
+    }
+
+    function updateExchangeRateStatus() {
+        if (!elements.exchangeRateStatus) return;
+        if (state.sourceCurrency === state.currency) {
+            elements.exchangeRateStatus.textContent = t('exchangeSame');
+            return;
+        }
+        if (state.exchangeRateState === 'loading') {
+            elements.exchangeRateStatus.textContent = t('exchangeLoading');
+            return;
+        }
+        if (state.exchangeRateState === 'error') {
+            elements.exchangeRateStatus.textContent = t('exchangeError');
+            return;
+        }
+        const rate = state.exchangeRate.toLocaleString(state.lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: 6 });
+        const date = state.exchangeRateDate
+            ? new Intl.DateTimeFormat(state.lang === 'tr' ? 'tr-TR' : 'en-US', { dateStyle: 'medium' }).format(new Date(`${state.exchangeRateDate}T00:00:00`))
+            : '';
+        const label = state.exchangeRateState === 'cached' ? t('exchangeCached') : t('exchangeLive');
+        elements.exchangeRateStatus.textContent = `${label}: 1 ${state.sourceCurrency} = ${rate} ${state.currency}${date ? ` · ${date}` : ''}`;
+    }
+
+    async function refreshExchangeRate({ render = true } = {}) {
+        const base = state.sourceCurrency;
+        const quote = state.currency;
+        const requestId = ++state.exchangeRequestId;
+        if (base === quote) {
+            state.exchangeRate = 1;
+            state.exchangeRateDate = '';
+            state.exchangeRateState = 'same';
+            updateExchangeRateStatus();
+            if (render && state.data.length) renderDashboard();
+            return;
+        }
+
+        const cached = readCachedExchangeRate(base, quote);
+        if (cached) {
+            state.exchangeRate = Number(cached.rate);
+            state.exchangeRateDate = String(cached.date || '');
+            state.exchangeRateState = 'cached';
+            updateExchangeRateStatus();
+            if (render && state.data.length) renderDashboard();
+        } else {
+            state.exchangeRate = 1;
+            state.exchangeRateDate = '';
+            state.exchangeRateState = 'loading';
+            updateExchangeRateStatus();
+            if (render && state.data.length) renderDashboard();
+        }
+
+        try {
+            const response = await fetch(`https://api.frankfurter.dev/v2/rate/${base}/${quote}`, {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store'
+            });
+            const payload = await response.json();
+            const rate = Number(payload.rate);
+            if (!response.ok || !Number.isFinite(rate) || rate <= 0) throw new Error('Invalid exchange rate');
+            if (requestId !== state.exchangeRequestId) return;
+            state.exchangeRate = rate;
+            state.exchangeRateDate = String(payload.date || '');
+            state.exchangeRateState = 'live';
+            saveExchangeRate(base, quote, rate, state.exchangeRateDate);
+        } catch (_) {
+            if (requestId !== state.exchangeRequestId) return;
+            state.exchangeRateState = cached ? 'cached' : 'error';
+            if (!cached) {
+                state.exchangeRate = 1;
+                state.exchangeRateDate = '';
+                if (state.data.length) showDashboardStatus(t('exchangeError'), 'warning');
+            }
+        }
+        updateExchangeRateStatus();
+        if (render && state.data.length) renderDashboard();
+    }
+
     function updateCurrency(currency) {
-        const supported = ['USD', 'TRY', 'EUR', 'GBP', 'CNY', 'JPY'];
-        state.currency = supported.includes(currency) ? currency : 'USD';
+        state.currency = supportedCurrencies.includes(currency) ? currency : 'USD';
         elements.currencySelect.value = state.currency;
         elements.quickCurrencySelect.value = state.currency;
         localStorage.setItem('currency', state.currency);
-        if (state.data.length) renderDashboard();
+        void refreshExchangeRate();
+    }
+
+    function updateSourceCurrency(currency) {
+        state.sourceCurrency = supportedCurrencies.includes(currency) ? currency : 'USD';
+        elements.sourceCurrencySelect.value = state.sourceCurrency;
+        localStorage.setItem('sourceCurrency', state.sourceCurrency);
+        void refreshExchangeRate();
     }
 
     function formatPercent(value) {
@@ -636,7 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chart: { ...baseChart, ...options.chart },
             theme: { mode: theme },
             grid: { borderColor: getComputedStyle(document.documentElement).getPropertyValue('--line-strong').trim(), strokeDashArray: 4 },
-            tooltip: { theme },
+            tooltip: { theme, ...options.tooltip },
             dataLabels: { enabled: false },
             noData: { text: t('noData') }
         });
@@ -690,18 +819,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const profits = [...analysis.profitAnalysis].filter(item => item.net > 0).sort((a, b) => b.net - a.net).slice(0, 6);
         const losses = [...analysis.profitAnalysis].filter(item => item.net < 0).sort((a, b) => a.net - b.net).slice(0, 6);
         renderChart('roi-profit-chart', {
-            series: [{ name: t('net'), data: profits.map(item => Number(item.net.toFixed(2))) }],
+            series: [{ name: t('net'), data: profits.map(item => Number(convertMoney(item.net).toFixed(2))) }],
             chart: { type: 'bar', height: 350 },
             colors: ['#57e6a5'],
-            xaxis: { categories: profits.map(item => shorten(item.name, 30)) },
+            xaxis: { categories: profits.map(item => shorten(item.name, 30)), labels: { formatter: value => formatCurrencyValue(Number(value)) } },
+            tooltip: { y: { formatter: value => formatCurrencyValue(Number(value)) } },
             plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '58%' } },
             title: { text: t('chartProfit'), style: { fontFamily: 'Space Grotesk', fontSize: '16px', fontWeight: 600 } }
         });
         renderChart('roi-loss-chart', {
-            series: [{ name: t('net'), data: losses.map(item => Number(item.net.toFixed(2))) }],
+            series: [{ name: t('net'), data: losses.map(item => Number(convertMoney(item.net).toFixed(2))) }],
             chart: { type: 'bar', height: 350 },
             colors: ['#ff758a'],
-            xaxis: { categories: losses.map(item => shorten(item.name, 30)) },
+            xaxis: { categories: losses.map(item => shorten(item.name, 30)), labels: { formatter: value => formatCurrencyValue(Number(value)) } },
+            tooltip: { y: { formatter: value => formatCurrencyValue(Number(value)) } },
             plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '58%' } },
             title: { text: t('chartLoss'), style: { fontFamily: 'Space Grotesk', fontSize: '16px', fontWeight: 600 } }
         });
@@ -774,12 +905,17 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.heatmapTooltip.hidden = false;
         const cellRect = cell.getBoundingClientRect();
         const tooltipRect = elements.heatmapTooltip.getBoundingClientRect();
-        const left = Math.min(
-            window.innerWidth - tooltipRect.width - 10,
-            Math.max(10, cellRect.left + (cellRect.width - tooltipRect.width) / 2)
-        );
-        let top = cellRect.top - tooltipRect.height - 9;
-        if (top < 10) top = cellRect.bottom + 9;
+        const viewportWidth = document.documentElement.clientWidth;
+        const viewportHeight = document.documentElement.clientHeight;
+        const padding = 12;
+        const gap = 9;
+        const preferredLeft = cellRect.left + (cellRect.width - tooltipRect.width) / 2;
+        const maxLeft = Math.max(padding, viewportWidth - tooltipRect.width - padding);
+        const left = Math.max(padding, Math.min(preferredLeft, maxLeft));
+        const maxTop = Math.max(padding, viewportHeight - tooltipRect.height - padding);
+        const above = cellRect.top - tooltipRect.height - gap;
+        const below = cellRect.bottom + gap;
+        const top = Math.max(padding, Math.min(above >= padding ? above : below, maxTop));
         elements.heatmapTooltip.style.left = `${left}px`;
         elements.heatmapTooltip.style.top = `${top}px`;
     }
@@ -1107,6 +1243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.langTR.addEventListener('click', () => setLanguage('tr'));
     elements.langEN.addEventListener('click', () => setLanguage('en'));
     elements.themeSwitcher.addEventListener('click', () => setTheme(document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark'));
+    elements.sourceCurrencySelect.addEventListener('change', () => updateSourceCurrency(elements.sourceCurrencySelect.value));
     elements.currencySelect.addEventListener('change', () => updateCurrency(elements.currencySelect.value));
     elements.quickCurrencySelect.addEventListener('change', () => updateCurrency(elements.quickCurrencySelect.value));
     elements.feeToggle.addEventListener('change', () => {
@@ -1152,6 +1289,7 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
     }));
 
+    elements.sourceCurrencySelect.value = state.sourceCurrency;
     elements.currencySelect.value = state.currency;
     elements.quickCurrencySelect.value = state.currency;
     elements.feeToggle.checked = state.applyFees;
@@ -1162,7 +1300,10 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.activityHeatmap.addEventListener('scroll', hideHeatmapTooltip, { passive: true });
     window.addEventListener('scroll', hideHeatmapTooltip, { passive: true, capture: true });
     window.addEventListener('resize', hideHeatmapTooltip, { passive: true });
-    void restoreDataset();
+    void (async () => {
+        await refreshExchangeRate({ render: false });
+        await restoreDataset();
+    })();
     window.addEventListener('beforeinstallprompt', event => {
         event.preventDefault();
         deferredInstallPrompt = event;

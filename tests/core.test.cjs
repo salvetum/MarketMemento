@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const {
     normaliseType,
     priceInCents,
+    convertAmount,
     parseMarketDate,
     marketDateHasTime,
     deduplicateRows,
@@ -14,6 +15,11 @@ test('işlem türü ve sent değeri normalize edilir', () => {
     assert.equal(normaliseType('sold'), 'sale');
     assert.equal(normaliseType('unknown'), '');
     assert.equal(priceInCents({ 'Price in Cents': '$1,299' }), 1299);
+});
+
+test('para tutarı geçerli kurla dönüştürülür', () => {
+    assert.equal(convertAmount(10, 47.195), 471.95);
+    assert.equal(convertAmount(10, 0), 0);
 });
 
 test('İngilizce ve Türkçe tarihler saatleriyle ayrıştırılır', () => {

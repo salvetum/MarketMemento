@@ -186,16 +186,6 @@ a { color: inherit; }
     100% { opacity: 1; transform: scale(1) rotate(0); }
 }
 
-@keyframes import-report-glow {
-    0%, 100% { border-color: var(--line); box-shadow: var(--shadow), inset 0 1px rgba(255,255,255,.06); }
-    50% { border-color: rgba(103,193,245,.3); box-shadow: 0 0 0 1px rgba(103,193,245,.07), 0 18px 55px rgba(40,153,245,.1), inset 0 1px rgba(255,255,255,.09); }
-}
-
-@keyframes import-icon-idle {
-    0%, 100% { filter: brightness(1); transform: translateY(0) scale(1); }
-    50% { filter: brightness(1.35); transform: translateY(-2px) scale(1.07); }
-}
-
 @keyframes panel-in {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -702,15 +692,14 @@ a { color: inherit; }
     padding: 1px;
     overflow: hidden;
     border-radius: 15px;
-    animation: import-report-glow 4.8s ease-in-out infinite;
 }
 .import-report[hidden] { display: none; }
-.import-report.is-entering { animation: import-report-in .58s cubic-bezier(.2,.75,.25,1) both, import-report-glow 4.8s .58s ease-in-out infinite; }
+.import-report.is-entering { animation: import-report-in .58s cubic-bezier(.2,.75,.25,1) both; }
 .import-report.is-entering .import-stat { animation: import-stat-in .46s calc(90ms + var(--import-stat-index, 0) * 70ms) cubic-bezier(.2,.75,.25,1) both; }
 .import-report.is-entering .import-stat i { animation: import-icon-pop .52s calc(150ms + var(--import-stat-index, 0) * 70ms) cubic-bezier(.2,.8,.25,1) both; }
 .import-stat { position: relative; z-index: 1; display: flex; align-items: center; gap: 11px; min-width: 0; padding: 13px 15px; background: var(--glass-strong); transition: background-color .22s ease, transform .22s ease; }
 .import-stat:hover { background: rgba(103,193,245,.075); transform: translateY(-1px); }
-.import-stat i { display: inline-block; color: var(--blue); font-size: 1rem; animation: import-icon-idle 3.2s calc(var(--import-stat-index, 0) * 180ms) ease-in-out infinite; }
+.import-stat i { display: inline-block; color: var(--blue); font-size: 1rem; }
 .import-stat span { min-width: 0; }
 .import-stat strong { display: block; color: var(--text); font-family: var(--font-display); font-size: .92rem; }
 .import-stat small { display: block; overflow: hidden; color: var(--muted); font-size: .61rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
@@ -813,13 +802,13 @@ input[type="month"]::-webkit-calendar-picker-indicator { cursor: pointer; opacit
 .heatmap-legend i:nth-child(3) { background: rgba(103,193,245,.4); }
 .heatmap-legend i:nth-child(4) { background: rgba(103,193,245,.65); }
 .heatmap-legend i:nth-child(5) { background: rgba(87,230,165,.9); }
-.heatmap-wrap { width: 100%; overflow-x: auto; padding-bottom: 7px; }
+.heatmap-wrap { width: 100%; overflow-x: auto; overflow-y: hidden; overscroll-behavior: contain; padding-bottom: 7px; }
 .heatmap-grid { min-width: 780px; display: grid; grid-template-columns: 72px repeat(var(--heatmap-columns, 24), minmax(22px, 1fr)); gap: 5px; align-items: center; }
 .heatmap-grid.by-month { min-width: 620px; }
 .heatmap-label { color: var(--muted); font-size: .62rem; font-weight: 700; }
 .heatmap-hour { text-align: center; }
 .heatmap-cell { aspect-ratio: 1; min-height: 18px; border: 1px solid rgba(103,193,245,.06); border-radius: 5px; background: rgba(103,193,245,.045); transition: transform .16s ease, border-color .16s ease, filter .16s ease; }
-.heatmap-cell:hover { position: relative; z-index: 2; transform: scale(1.28); border-color: rgba(255,255,255,.35); filter: brightness(1.18); }
+.heatmap-cell:hover, .heatmap-cell:focus-visible { position: relative; z-index: 2; transform: translateY(-2px); border-color: rgba(255,255,255,.4); filter: brightness(1.18); box-shadow: 0 0 0 2px rgba(103,193,245,.12), 0 7px 16px rgba(0,0,0,.22); outline: none; }
 .heatmap-cell[data-level="1"] { background: rgba(103,193,245,.18); }
 .heatmap-cell[data-level="2"] { background: rgba(103,193,245,.36); }
 .heatmap-cell[data-level="3"] { background: rgba(103,193,245,.62); }
@@ -838,6 +827,7 @@ input[type="month"]::-webkit-calendar-picker-indicator { cursor: pointer; opacit
     font-weight: 750;
     line-height: 1.4;
     pointer-events: none;
+    contain: layout paint;
 }
 .heatmap-tooltip[hidden] { display: none; }
 
@@ -846,6 +836,10 @@ input[type="month"]::-webkit-calendar-picker-indicator { cursor: pointer; opacit
 .setting-row > span:first-child { min-width: 0; }
 .setting-row strong { display: block; color: var(--text); font-size: .82rem; }
 .setting-row small { display: block; max-width: 330px; margin-top: 4px; color: var(--muted); font-size: .68rem; line-height: 1.55; }
+.exchange-rate-note { align-items: center; margin: 10px 0 2px; }
+.exchange-rate-note span { flex: 1; }
+.exchange-rate-note a { color: var(--blue); font-size: .65rem; font-weight: 800; text-decoration: none; }
+.exchange-rate-note a:hover { text-decoration: underline; }
 .setting-control { width: 130px; flex: 0 0 130px; }
 .percent-input { position: relative; display: flex; align-items: center; flex: 0 0 105px; }
 .percent-input .form-control { width: 105px; padding-right: 30px; }

@@ -32,6 +32,12 @@
         return Number.parseInt(raw, 10) || 0;
     }
 
+    function convertAmount(value, rate = 1) {
+        const amount = Number(value);
+        const multiplier = Number(rate);
+        return Number.isFinite(amount) && Number.isFinite(multiplier) && multiplier > 0 ? amount * multiplier : 0;
+    }
+
     function marketDateHasTime(value) {
         const source = String(value || '').trim();
         if (/^\d{10,13}$/.test(source)) return true;
@@ -221,5 +227,5 @@
         };
     }
 
-    return { normaliseType, priceInCents, parseMarketDate, marketDateHasTime, rowFingerprint, deduplicateRows, analyseMarketData };
+    return { normaliseType, priceInCents, convertAmount, parseMarketDate, marketDateHasTime, rowFingerprint, deduplicateRows, analyseMarketData };
 }));

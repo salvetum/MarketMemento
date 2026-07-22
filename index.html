@@ -12,7 +12,7 @@
     <link href="vendor/fonts/fonts.css" rel="stylesheet">
     <link href="vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="styles.css?v=13" rel="stylesheet">
+    <link href="styles.css?v=14" rel="stylesheet">
 </head>
 <body>
     <div class="ambient" aria-hidden="true">
@@ -147,9 +147,9 @@
                         <label for="merge-file-input" class="secondary-button action-label" title="CSV ekle">
                             <i class="bi bi-file-earmark-plus"></i> <span data-i18n="addFiles">CSV ekle</span>
                         </label>
-                        <label class="quick-currency" for="quick-currency-select" data-i18n-title="currencyTitle" title="CSV para birimi">
+                        <label class="quick-currency" for="quick-currency-select" data-i18n-title="currencyTitle" title="Görüntüleme para birimi">
                             <i class="bi bi-currency-exchange" aria-hidden="true"></i>
-                            <select id="quick-currency-select" aria-label="CSV para birimi">
+                            <select id="quick-currency-select" aria-label="Görüntüleme para birimi">
                                 <option value="USD">USD</option>
                                 <option value="TRY">TRY</option>
                                 <option value="EUR">EUR</option>
@@ -279,8 +279,19 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
                 </div>
                 <div class="modal-body pt-0">
+                    <label class="setting-row" for="source-currency-select">
+                        <span><strong data-i18n="sourceCurrencyTitle">CSV para birimi</strong><small data-i18n="sourceCurrencyText">Dosyadaki tutarların ait olduğu para birimini seç.</small></span>
+                        <select id="source-currency-select" class="form-select setting-control">
+                            <option value="USD">USD ($)</option>
+                            <option value="TRY">TRY (₺)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="GBP">GBP (£)</option>
+                            <option value="CNY">CNY (¥)</option>
+                            <option value="JPY">JPY (¥)</option>
+                        </select>
+                    </label>
                     <label class="setting-row" for="currency-select">
-                        <span><strong data-i18n="currencyTitle">CSV para birimi</strong><small data-i18n="currencyText">Dönüşüm yapmaz; yalnızca tutarları seçtiğin simgeyle gösterir.</small></span>
+                        <span><strong data-i18n="currencyTitle">Görüntüleme para birimi</strong><small data-i18n="currencyText">Tutarları günlük referans kuruyla dönüştürür.</small></span>
                         <select id="currency-select" class="form-select setting-control">
                             <option value="USD">USD ($)</option>
                             <option value="TRY">TRY (₺)</option>
@@ -290,6 +301,7 @@
                             <option value="JPY">JPY (¥)</option>
                         </select>
                     </label>
+                    <div class="method-note exchange-rate-note"><i class="bi bi-arrow-left-right"></i><span id="exchange-rate-status" aria-live="polite"></span><a href="https://frankfurter.dev/" target="_blank" rel="noopener noreferrer">Frankfurter</a></div>
                     <label class="setting-row" for="fee-toggle">
                         <span><strong data-i18n="feeTitle">Ücret tahmini uygula</strong><small data-i18n="feeText">Satış tutarından belirlediğin oranı düşerek FIFO farkını yeniden hesaplar.</small></span>
                         <span class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="fee-toggle"></span>
@@ -316,6 +328,6 @@
     <script src="vendor/html2canvas/html2canvas.min.js"></script>
     <script src="vendor/jspdf/jspdf.umd.min.js"></script>
     <script src="core.js"></script>
-    <script src="app.js?v=13"></script>
+    <script src="app.js?v=14"></script>
 </body>
 </html>

@@ -47,7 +47,7 @@ Explore market activity, games, and FIFO results without sending your data away 
 - Remove duplicate records and display an import summary
 - Filter by game, item, and date
 - Match purchases and sales using a FIFO approach
-- Optional fee estimation and currency-symbol display
+- Optional fee estimation and currency conversion using a daily reference rate
 - Monthly activity, game summary, and year comparison charts
 - Activity heatmap by day and hour
 - Export tables as CSV or JSON
@@ -85,6 +85,7 @@ Market Name,Price in Cents,Type
 - Never enter your Steam password into an extension screen.
 - Consider disabling the extension after exporting the CSV.
 - MarketMemento does not send CSV contents to a server.
+- When conversion is enabled, only the selected currency codes are sent to Frankfurter; CSV contents are never shared.
 - Data may be stored in the browser's IndexedDB for convenience.
 - On a shared device, use **New file** when finished to clear the saved dataset.
 
@@ -92,7 +93,7 @@ Market Name,Price in Cents,Type
 
 - Realized difference is estimated with **FIFO**, matching sales against the oldest available purchases.
 - The fee option subtracts a user-defined rate from sales and is not an official Steam fee calculator.
-- Currency selection changes only the displayed symbol; it does not perform exchange-rate conversion.
+- CSV currency and display currency can be selected separately. Amounts use Frankfurter's latest daily reference rate rather than the historical rate from each transaction date.
 - Incomplete history or mixed currencies in one dataset can affect the results.
 - PNG and PDF reports include the analytics tab that is active at export time.
 

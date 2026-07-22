@@ -1,10 +1,10 @@
-const CACHE_NAME = 'marketmemento-v6';
+const CACHE_NAME = 'marketmemento-v7';
 const APP_ASSETS = [
     './',
     './index.html',
-    './styles.css?v=13',
+    './styles.css?v=14',
     './core.js',
-    './app.js?v=13',
+    './app.js?v=14',
     './manifest.webmanifest',
     './icon.svg',
     './assets/icons/icon-192.png',
@@ -54,11 +54,5 @@ self.addEventListener('fetch', event => {
         );
         return;
     }
-    event.respondWith(
-        caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-            return response;
-        }))
-    );
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });
