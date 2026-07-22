@@ -966,46 +966,46 @@ footer span:first-child { color: var(--muted-strong); font-family: var(--font-di
 .modal-content p { color: var(--muted-strong); font-size: .82rem; line-height: 1.7; }
 [data-bs-theme="dark"] .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
 
-/* Firefox repaints large animated backdrops more aggressively than Chromium.
-   Keep the glass look while avoiding continuous full-page blur and shadow work. */
-html.is-firefox {
+/* Automatically applied only when software rendering, very low-end hardware,
+   or sustained frame drops are detected. Full effects remain the default. */
+html.performance-mode {
     --glass: rgba(13, 26, 35, .88);
     --glass-strong: rgba(11, 23, 31, .96);
     --shadow: none;
 }
 
-html.is-firefox[data-bs-theme="light"] {
+html.performance-mode[data-bs-theme="light"] {
     --glass: rgba(247, 252, 255, .92);
     --glass-strong: rgba(255, 255, 255, .97);
 }
 
-.is-firefox .ambient { display: none; }
+.performance-mode .ambient { display: none; }
 
-.is-firefox .glass-panel,
-.is-firefox .stat-card,
-.is-firefox .table > thead,
-.is-firefox .export-overlay {
+.performance-mode .glass-panel,
+.performance-mode .stat-card,
+.performance-mode .table > thead,
+.performance-mode .export-overlay {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
 }
 
-.is-firefox *,
-.is-firefox *::before,
-.is-firefox *::after { transition: none !important; }
+.performance-mode *,
+.performance-mode *::before,
+.performance-mode *::after { transition: none !important; }
 
-.is-firefox .glass-panel,
-.is-firefox .stat-card { box-shadow: none; }
+.performance-mode .glass-panel,
+.performance-mode .stat-card { box-shadow: none; }
 
-.is-firefox .upload-icon { animation: none; }
-.is-firefox .import-report { animation: none; }
-.is-firefox .import-report.is-entering { animation: import-report-in .42s cubic-bezier(.2,.75,.25,1) both; }
-.is-firefox .import-report::after { display: none; will-change: auto; animation: none; }
-.is-firefox .import-stat i { animation: none; }
-.is-firefox .table tbody tr { animation: none; }
-.is-firefox .stat-card:hover,
-.is-firefox .chart-card:hover,
-.is-firefox .guide-step:hover,
-.is-firefox .import-stat:hover { transform: none; }
+.performance-mode .upload-icon { animation: none; }
+.performance-mode .import-report { animation: none; }
+.performance-mode .import-report.is-entering { animation: import-report-in .42s cubic-bezier(.2,.75,.25,1) both; }
+.performance-mode .import-report::after { display: none; will-change: auto; animation: none; }
+.performance-mode .import-stat i { animation: none; }
+.performance-mode .table tbody tr { animation: none; }
+.performance-mode .stat-card:hover,
+.performance-mode .chart-card:hover,
+.performance-mode .guide-step:hover,
+.performance-mode .import-stat:hover { transform: none; }
 
 @media (max-width: 980px) {
     .onboarding { grid-template-columns: minmax(0, 1fr); padding-top: 46px; }

@@ -1,7 +1,59 @@
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-const isFirefox = navigator.userAgent.includes('Firefox/');
-if (isFirefox) document.documentElement.classList.add('is-firefox');
+
+function hasSoftwareRenderingRisk() {
+    const cores = Number(navigator.hardwareConcurrency || 0);
+    const memory = Number(navigator.deviceMemory || 0);
+    if ((cores > 0 && cores <= 2) || (memory > 0 && memory <= 2)) return true;
+
+    try {
+        const canvas = document.createElement('canvas');
+        const options = { failIfMajorPerformanceCaveat: true, powerPreference: 'high-performance' };
+        const gl = canvas.getContext('webgl2', options) || canvas.getContext('webgl', options);
+        if (!gl) return true;
+
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        const renderer = String(debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+        return /swiftshader|llvmpipe|softpipe|software|basic render|mesa offscreen/i.test(renderer);
+    } catch (_) {
+        return false;
+    }
+}
+
+function enablePerformanceMode() {
+    document.documentElement.classList.add('performance-mode');
+}
+
+if (hasSoftwareRenderingRisk()) enablePerformanceMode();
+
+function probeFrameRate() {
+    if (document.hidden || document.documentElement.classList.contains('performance-mode') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let startedAt = 0;
+    let previousFrame = 0;
+    let frames = 0;
+    let slowFrames = 0;
+
+    function sample(timestamp) {
+        if (!startedAt) startedAt = timestamp;
+        if (previousFrame && timestamp - previousFrame > 28) slowFrames += 1;
+        previousFrame = timestamp;
+        frames += 1;
+
+        const elapsed = timestamp - startedAt;
+        if (elapsed < 1800) {
+            requestAnimationFrame(sample);
+            return;
+        }
+
+        const measuredFps = frames * 1000 / Math.max(elapsed, 1);
+        if (measuredFps < 42 || (frames > 30 && slowFrames / frames > .3)) enablePerformanceMode();
+    }
+
+    requestAnimationFrame(sample);
+}
+
+window.addEventListener('load', () => window.setTimeout(probeFrameRate, 1600), { once: true });
 
 document.addEventListener('DOMContentLoaded', () => {
     'use strict';
@@ -554,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
             background: 'transparent',
             foreColor: getComputedStyle(document.documentElement).getPropertyValue('--muted').trim(),
             toolbar: { show: false },
-            animations: { enabled: !isFirefox, speed: isFirefox ? 0 : 420 }
+            animations: { enabled: !document.documentElement.classList.contains('performance-mode'), speed: 420 }
         };
         state.charts[id] = new ApexCharts(container, {
             ...options,
