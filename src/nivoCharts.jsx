@@ -190,9 +190,9 @@ function BarChart({ options }) {
             keys={keys}
             indexBy="label"
             layout={horizontal ? 'horizontal' : 'vertical'}
-            margin={{ top: 8, right: 18, bottom: horizontal ? 36 : 88, left: horizontal ? 132 : 52 }}
-            padding={0.34}
-            borderRadius={6}
+            margin={{ top: 8, right: 18, bottom: horizontal ? 36 : categories.length > 8 ? 104 : 88, left: horizontal ? 132 : 52 }}
+            padding={categories.length > 8 ? 0.16 : 0.28}
+            borderRadius={0}
             colors={options.colors || ['#57e6a5', '#67c1f5', '#a684ff']}
             enableLabel={false}
             enableGridX={horizontal}
