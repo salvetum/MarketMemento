@@ -181,7 +181,7 @@ function BarChart({ options }) {
   const horizontal = Boolean(options.plotOptions?.bar?.horizontal);
   const tickStep = Math.max(1, Math.ceil(categories.length / 8));
   const tickValues = categories.filter((_, index) => index % tickStep === 0);
-  const horizontalLabelLimit = options.horizontalLabelLimit || 28;
+  const horizontalLabelLimit = options.horizontalLabelLimit || 22;
   return (
     <ChartFrame title={titleFor(options)}>
       <ChartViewport>
@@ -191,7 +191,7 @@ function BarChart({ options }) {
             keys={keys}
             indexBy="label"
             layout={horizontal ? 'horizontal' : 'vertical'}
-            margin={{ top: options.legendPosition === 'bottom' ? 8 : 28, right: 18, bottom: horizontal ? (options.legendPosition === 'bottom' ? 82 : 30) : categories.length > 8 ? 104 : 88, left: horizontal ? 132 : 52 }}
+            margin={{ top: options.legendPosition === 'bottom' ? 8 : 28, right: 18, bottom: horizontal ? (options.legendPosition === 'bottom' ? 82 : 30) : categories.length > 8 ? 104 : 88, left: horizontal ? 140 : 52 }}
             padding={categories.length > 8 ? 0.16 : 0.28}
             borderRadius={0}
             colors={options.colors || ['#57e6a5', '#67c1f5', '#a684ff']}
