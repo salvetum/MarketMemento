@@ -28,6 +28,35 @@ function titleFor(options) {
   return options?.title?.text || '';
 }
 
+function compactLabel(value, limit = 18) {
+  const label = String(value ?? '');
+  return label.length > limit ? `${label.slice(0, limit - 1)}…` : label;
+}
+
+function formatChartDate(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value ?? '');
+  return new Intl.DateTimeFormat(document.documentElement.lang === 'tr' ? 'tr-TR' : 'en-US', {
+    month: 'short',
+    year: 'numeric'
+  }).format(date);
+}
+
+function formatChartValue(value) {
+  return Number(value).toLocaleString(document.documentElement.lang === 'tr' ? 'tr-TR' : 'en-US', {
+    maximumFractionDigits: 2
+  });
+}
+
+function ChartTooltip({ label, rows }) {
+  return (
+    <div className="nivo-tooltip">
+      {label ? <strong>{label}</strong> : null}
+      {rows.map(row => <div className="nivo-tooltip-row" key={row.label}><span>{row.label}</span><b>{row.value}</b></div>)}
+    </div>
+  );
+}
+
 function ChartFrame({ title, children }) {
   return (
     <div className="nivo-chart-frame">
@@ -96,7 +125,9 @@ function LineChart({ options }) {
             enableGridX={false}
             useMesh
             theme={chartTheme()}
-            axisBottom={{ tickRotation: 0, tickSize: 5, tickPadding: 8, format: timeline ? value => new Intl.DateTimeFormat(undefined, { month: 'short', year: '2-digit' }).format(new Date(value)) : undefined }}
+            tooltip={({ point }) => <ChartTooltip label={timeline ? formatChartDate(point.data.x) : String(point.data.x ?? '')} rows={[{ label: point.seriesId, value: formatChartValue(point.data.y) }]} />}
+            sliceTooltip={({ slice }) => <ChartTooltip label={timeline ? formatChartDate(slice.points[0]?.data.x) : String(slice.points[0]?.data.x ?? '')} rows={slice.points.map(point => ({ label: point.seriesId, value: formatChartValue(point.data.y) }))} />}
+            axisBottom={{ tickValues: timeline ? 8 : undefined, tickRotation: 0, tickSize: 5, tickPadding: 8, format: timeline ? formatChartDate : undefined }}
             axisLeft={{ tickSize: 5, tickPadding: 8 }}
             legends={[{ anchor: 'top-right', direction: 'row', translateY: -4, itemWidth: 90, itemHeight: 18, symbolSize: 10 }]}
             role="img"
@@ -127,6 +158,7 @@ function PieChart({ options }) {
             arcLabelsSkipAngle={12}
             arcLabelsTextColor="#ffffff"
             enableArcLinkLabels={false}
+            tooltip={({ datum }) => <ChartTooltip rows={[{ label: datum.label, value: formatChartValue(datum.value) }]} />}
             legends={[{ anchor: 'bottom', direction: 'row', justify: false, translateY: 38, itemsSpacing: 14, itemWidth: 90, itemHeight: 18, symbolSize: 10 }]}
             theme={chartTheme()}
             role="img"
@@ -140,30 +172,37 @@ function PieChart({ options }) {
 
 function BarChart({ options }) {
   const categories = options.xaxis?.categories || [];
-  const values = options.series?.[0]?.data || [];
-  const data = categories.map((label, index) => ({ label, value: Number(values[index]) || 0 }));
+  const chartSeries = options.series || [];
+  const keys = chartSeries.map((series, index) => series.name || `value-${index}`);
+  const data = categories.map((label, index) => Object.fromEntries([
+    ['label', label],
+    ...chartSeries.map((series, seriesIndex) => [keys[seriesIndex], Number(series.data?.[index]) || 0])
+  ]));
   const horizontal = Boolean(options.plotOptions?.bar?.horizontal);
+  const tickStep = Math.max(1, Math.ceil(categories.length / 8));
+  const tickValues = categories.filter((_, index) => index % tickStep === 0);
   return (
     <ChartFrame title={titleFor(options)}>
       <ChartViewport>
         {data.length ? (
           <ResponsiveBar
             data={data}
-            keys={['value']}
+            keys={keys}
             indexBy="label"
             layout={horizontal ? 'horizontal' : 'vertical'}
-            margin={{ top: 8, right: 18, bottom: horizontal ? 36 : 62, left: horizontal ? 112 : 52 }}
+            margin={{ top: 8, right: 18, bottom: horizontal ? 36 : 88, left: horizontal ? 132 : 52 }}
             padding={0.34}
             borderRadius={6}
-            colors={options.colors || ['#57e6a5']}
+            colors={options.colors || ['#57e6a5', '#67c1f5', '#a684ff']}
             enableLabel={false}
             enableGridX={horizontal}
             enableGridY={!horizontal}
             theme={chartTheme()}
-            axisBottom={{ tickSize: 5, tickPadding: 8, tickRotation: horizontal ? 0 : -32 }}
+            axisBottom={{ tickValues, tickSize: 5, tickPadding: 8, tickRotation: horizontal ? 0 : -42, format: compactLabel }}
             axisLeft={{ tickSize: 5, tickPadding: 8 }}
             valueScale={{ type: 'linear' }}
             valueFormat={value => Number(value).toLocaleString()}
+            tooltip={({ id, value, indexValue }) => <ChartTooltip label={String(indexValue)} rows={[{ label: String(id), value: formatChartValue(value) }]} />}
             role="img"
             ariaLabel={titleFor(options)}
           />
