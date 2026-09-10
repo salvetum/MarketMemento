@@ -1087,6 +1087,7 @@ input[type="month"]::-webkit-calendar-picker-indicator { cursor: pointer; opacit
 
 footer { display: flex; justify-content: space-between; gap: 20px; padding: 30px 5px 0; color: var(--muted); font-size: .69rem; }
 footer span:first-child { color: var(--muted-strong); font-family: var(--font-display); font-weight: 700; }
+.footer-signature { margin-left: 6px; color: var(--muted); font: 600 .72rem var(--font-body); letter-spacing: .02em; }
 
 .modal.fade .modal-dialog {
     opacity: 0;
