@@ -172,12 +172,13 @@
         const totalFees = sales.reduce((sum, row) => sum + row._price * feeRate, 0) / 100;
 
         const byItem = new Map();
-        [...data].sort((a, b) => {
+        const sortedData = [...data].sort((a, b) => {
             if (a._date && b._date) return new Date(a._date) - new Date(b._date);
             if (a._date) return -1;
             if (b._date) return 1;
             return (a._index || 0) - (b._index || 0);
-        }).forEach(row => {
+        });
+        sortedData.forEach(row => {
             const key = `${row['Game Name']}\u0000${row['Market Name']}`;
             if (!byItem.has(key)) byItem.set(key, { name: row['Market Name'], game: row['Game Name'], queue: [], pairs: [] });
             const item = byItem.get(key);
@@ -202,6 +203,39 @@
                 };
             });
 
+        const inventory = [...byItem.values()]
+            .filter(item => item.queue.length)
+            .map(item => {
+                const cost = item.queue.reduce((sum, row) => sum + Number(row._price || 0), 0) / 100;
+                const latestPurchase = item.queue[item.queue.length - 1];
+                const latestSale = [...item.pairs].reverse().find(pair => Number.isFinite(Number(pair.sale?._price)));
+                const marketKey = `${item.game}\u0000${item.name}`;
+                const liveEstimate = Number(options.marketPrices?.[marketKey]);
+                const estimate = liveEstimate > 0 ? liveEstimate : Number(latestPurchase?._price ?? latestSale?.sale?._price ?? 0) / 100;
+                const marketValue = estimate * item.queue.length;
+                const purchaseDates = item.queue.map(row => row._date ? new Date(row._date) : null).filter(date => date && Number.isFinite(date.getTime()));
+                const oldestPurchaseDate = purchaseDates.length ? new Date(Math.min(...purchaseDates.map(date => date.getTime()))) : null;
+                const newestPurchaseDate = purchaseDates.length ? new Date(Math.max(...purchaseDates.map(date => date.getTime()))) : null;
+                const referenceDate = new Date();
+                const holdingDays = purchaseDates.map(date => Math.max(0, (referenceDate - date) / 86_400_000));
+                return {
+                    name: item.name,
+                    game: item.game,
+                    quantity: item.queue.length,
+                    cost,
+                    avgCost: item.queue.length ? cost / item.queue.length : 0,
+                    estimatedUnitValue: estimate,
+                    marketValue,
+                    unrealisedProfit: marketValue - cost,
+                    unrealisedRoi: cost ? ((marketValue - cost) / cost) * 100 : 0,
+                    oldestPurchaseDate,
+                    newestPurchaseDate,
+                    oldestHoldingDays: oldestPurchaseDate ? Math.max(0, (referenceDate - oldestPurchaseDate) / 86_400_000) : 0,
+                    averageHoldingDays: holdingDays.length ? holdingDays.reduce((sum, days) => sum + days, 0) / holdingDays.length : 0,
+                    valuationMethod: liveEstimate > 0 ? 'steam-market-live' : 'latest-purchase-price'
+                };
+            });
+
         const gameMap = new Map();
         data.forEach(row => {
             const game = row['Game Name'];
@@ -211,9 +245,15 @@
             if (row._type === 'purchase') item.spent += row._price / 100;
             if (row._type === 'sale') item.earned += netSaleValue(row._price) / 100;
         });
-        const gameStats = [...gameMap.values()].map(game => ({ ...game, cashflow: game.earned - game.spent }));
+        const gameStats = [...gameMap.values()].map(game => ({
+            ...game,
+            cashflow: game.earned - game.spent,
+            roi: game.spent ? ((game.earned - game.spent) / game.spent) * 100 : 0
+        })).sort((left, right) => right.cashflow - left.cashflow);
 
         const monthly = new Map();
+        const monthlyRoi = new Map();
+        const realisedByMonth = new Map();
         const hourlyActivity = Array.from({ length: 7 }, () => Array(24).fill(0));
         const monthlyActivity = Array.from({ length: 7 }, () => Array(12).fill(0));
         let timedRows = 0;
@@ -233,18 +273,93 @@
             years.get(date.getFullYear())[date.getMonth()] += 1;
         });
 
+        // Keep zero-ROI months in the series so gaps in activity remain visible.
+        monthly.forEach((value, key) => {
+            if (!monthlyRoi.has(key)) {
+                monthlyRoi.set(key, { date: new Date(value.date.getFullYear(), value.date.getMonth(), 1), cost: 0, revenue: 0, profit: 0 });
+            }
+        });
+        profitAnalysis.forEach(item => {
+            const source = byItem.get(`${item.game}\u0000${item.name}`);
+            source?.pairs.forEach(pair => {
+                if (!pair.sale?._date) return;
+                const date = new Date(pair.sale._date);
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                if (!monthlyRoi.has(key)) monthlyRoi.set(key, { date: new Date(date.getFullYear(), date.getMonth(), 1), cost: 0, revenue: 0, profit: 0 });
+                const month = monthlyRoi.get(key);
+                month.cost += Number(pair.buy?._price || 0) / 100;
+                month.revenue += netSaleValue(Number(pair.sale?._price || 0)) / 100;
+                month.profit += (netSaleValue(Number(pair.sale?._price || 0)) - Number(pair.buy?._price || 0)) / 100;
+            });
+        });
+
         const timeline = [...monthly.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([, value]) => value);
+        const monthlyRoiSeries = [...monthlyRoi.entries()]
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([key, value]) => ({ key, ...value, roi: value.cost ? (value.profit / value.cost) * 100 : 0 }));
+        const cumulativeProfit = [];
+        let runningProfit = 0;
+        monthlyRoiSeries.forEach(item => {
+            runningProfit += item.profit;
+            cumulativeProfit.push({ key: item.key, date: item.date, profit: item.profit, cumulativeProfit: runningProfit });
+        });
         const realisedProfit = profitAnalysis.reduce((sum, item) => sum + item.net, 0);
         const matchedCount = profitAnalysis.reduce((sum, item) => sum + item.matched, 0);
         const unmatchedCount = [...byItem.values()].reduce((sum, item) => sum + item.queue.length, 0);
+        const remainingCost = inventory.reduce((sum, item) => sum + item.cost, 0);
+        const remainingValue = inventory.reduce((sum, item) => sum + item.marketValue, 0);
+        const unrealisedProfit = inventory.reduce((sum, item) => sum + item.unrealisedProfit, 0);
+        const inventoryDays = inventory.reduce((sum, item) => sum + item.averageHoldingDays * item.quantity, 0);
+        const inventoryByGame = [...inventory.reduce((groups, item) => {
+            if (!groups.has(item.game)) groups.set(item.game, { game: item.game, quantity: 0, cost: 0, marketValue: 0, unrealisedProfit: 0 });
+            const group = groups.get(item.game);
+            group.quantity += item.quantity;
+            group.cost += item.cost;
+            group.marketValue += item.marketValue;
+            group.unrealisedProfit += item.unrealisedProfit;
+            return groups;
+        }, new Map()).values()].map(item => ({
+            ...item,
+            unrealisedRoi: item.cost ? (item.unrealisedProfit / item.cost) * 100 : 0
+        }));
         const hasCompleteTimeData = datedRows > 0 && timedRows === datedRows;
 
         return {
-            summary: { realisedProfit, totalSold, totalPurchased, totalFees, transactions: data.length },
+            summary: {
+                realisedProfit, totalSold, totalPurchased, totalFees, transactions: data.length,
+                remainingQuantity: inventory.reduce((sum, item) => sum + item.quantity, 0),
+                remainingCost,
+                remainingValue,
+                unrealisedProfit,
+                unrealisedRoi: remainingCost ? (unrealisedProfit / remainingCost) * 100 : 0,
+                averageHoldingDays: unmatchedCount ? inventoryDays / unmatchedCount : 0,
+                oldestHoldingDays: inventory.reduce((max, item) => Math.max(max, item.oldestHoldingDays), 0),
+                valuationMethod: inventory.some(item => item.valuationMethod === 'steam-market-live') ? 'steam-market-live' : 'latest-purchase-price',
+                // Keep concise aliases for consumers that use US spelling.
+                inventoryCount: inventory.reduce((sum, item) => sum + item.quantity, 0),
+                inventoryCost: remainingCost,
+                inventoryValue: remainingValue,
+                unrealizedProfit: unrealisedProfit,
+                unrealizedROI: remainingCost ? (unrealisedProfit / remainingCost) * 100 : 0
+            },
             typeCounts: { purchase: purchases.length, sale: sales.length },
             profitAnalysis,
             gameStats,
+            gameComparison: gameStats.map(game => ({
+                name: game.game,
+                spent: game.spent,
+                earned: game.earned,
+                cashflow: game.cashflow,
+                roi: game.roi,
+                transactions: game.transactions
+            })),
             timeline,
+            cumulativeProfit,
+            monthlyRoi: monthlyRoiSeries,
+            monthlyROI: monthlyRoiSeries,
+            cumulativeRealisedProfit: cumulativeProfit,
+            inventory,
+            inventoryByGame,
             matchedCount,
             unmatchedCount,
             activity: hasCompleteTimeData ? hourlyActivity : monthlyActivity,

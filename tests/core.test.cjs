@@ -121,3 +121,64 @@ test('ücret tahmini satış geliri ve FIFO sonucuna uygulanır', () => {
     assert.equal(result.summary.realisedProfit, 0.7);
     assert.equal(result.gameStats[0].cashflow, 0.7);
 });
+
+test('kümülatif gerçekleşmiş kâr ve aylık ROI verisi üretilir', () => {
+    const row = (type, price, date, index) => ({
+        'Market Name': 'Item', 'Game Name': 'Game', _type: type, _price: price,
+        _date: new Date(date).toISOString(), _index: index
+    });
+    const result = analyseMarketData([
+        row('purchase', 100, '2025-01-02', 0),
+        row('sale', 150, '2025-01-20', 1),
+        row('purchase', 200, '2025-02-01', 2),
+        row('sale', 100, '2025-02-20', 3)
+    ]);
+    assert.deepEqual(result.monthlyRoi.map(item => [item.key, item.profit, item.roi]), [
+        ['2025-01', 0.5, 50],
+        ['2025-02', -1, -50]
+    ]);
+    assert.deepEqual(result.cumulativeProfit.map(item => item.cumulativeProfit), [0.5, -0.5]);
+});
+
+test('eşleşmeyen FIFO alışları kalan envanter ve gerçekleşmemiş özete taşınır', () => {
+    const result = analyseMarketData([
+        { 'Market Name': 'Key', 'Game Name': 'Game', _type: 'purchase', _price: 250, _date: '2025-01-01T00:00:00.000Z', _index: 0 },
+        { 'Market Name': 'Key', 'Game Name': 'Game', _type: 'purchase', _price: 350, _date: '2025-01-02T00:00:00.000Z', _index: 1 },
+        { 'Market Name': 'Key', 'Game Name': 'Game', _type: 'sale', _price: 500, _date: '2025-01-03T00:00:00.000Z', _index: 2 }
+    ]);
+    assert.equal(result.inventory[0].quantity, 1);
+    assert.equal(result.summary.remainingQuantity, 1);
+    assert.equal(result.summary.remainingCost, 3.5);
+    assert.equal(result.summary.remainingValue, 3.5);
+    assert.equal(result.summary.unrealisedProfit, 0);
+});
+
+test('envanter gerçekleşmemiş ROI, elde tutma süresi ve oyun dağılımı üretir', () => {
+    const result = analyseMarketData([
+        { 'Market Name': 'Key', 'Game Name': 'Game', _type: 'purchase', _price: 250, _date: '2025-01-01T00:00:00.000Z', _index: 0 },
+        { 'Market Name': 'Key', 'Game Name': 'Game', _type: 'purchase', _price: 350, _date: '2025-01-02T00:00:00.000Z', _index: 1 }
+    ]);
+    const item = result.inventory[0];
+    assert.equal(item.quantity, 2);
+    assert.equal(item.unrealisedRoi, (1 / 6) * 100);
+    assert.equal(item.valuationMethod, 'latest-purchase-price');
+    assert.ok(item.oldestHoldingDays > 0);
+    assert.equal(result.summary.unrealisedRoi, (1 / 6) * 100);
+    assert.equal(result.summary.averageHoldingDays > 0, true);
+    assert.equal(result.inventoryByGame[0].quantity, 2);
+});
+
+test('oyun karşılaştırması harcama, gelir, nakit akışı ve ROI üretir', () => {
+    const row = (game, type, price, index) => ({
+        'Market Name': 'Item', 'Game Name': game, _type: type, _price: price,
+        _date: `2025-01-0${index + 1}T00:00:00.000Z`, _index: index
+    });
+    const result = analyseMarketData([
+        row('A', 'purchase', 100, 0), row('A', 'sale', 200, 1),
+        row('B', 'purchase', 300, 2), row('B', 'sale', 150, 3)
+    ]);
+    assert.deepEqual(result.gameComparison.map(item => [item.name, item.cashflow, item.roi]), [
+        ['A', 1, 100],
+        ['B', -1.5, -50]
+    ]);
+});

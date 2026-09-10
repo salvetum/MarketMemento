@@ -1,0 +1,5 @@
+MIT License
+
+Copyright (c) Meta Platforms, Inc. and affiliates.
+
+The React license text is distributed with the npm package.

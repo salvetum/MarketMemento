@@ -18,7 +18,7 @@ Explore market activity, games, and FIFO results without sending your data away 
 ![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20PWA-67c1f5?style=flat-square)
 ![Approach](https://img.shields.io/badge/Approach-Local--first-57e6a5?style=flat-square)
 ![Interface](https://img.shields.io/badge/Interface-Türkçe%20%7C%20English-a684ff?style=flat-square)
-![Tests](https://img.shields.io/badge/Tests-6%2F6%20passing-57e6a5?style=flat-square)
+![Tests](https://img.shields.io/badge/Tests-16%2F16%20passing-57e6a5?style=flat-square)
 [![License](https://img.shields.io/github/license/salvetum/MarketMemento?style=flat-square&label=License)](LICENSE)
 
 <br>
@@ -47,14 +47,18 @@ Explore market activity, games, and FIFO results without sending your data away 
 - Remove duplicate records and display an import summary
 - Filter by game, item, and date
 - Match purchases and sales using a FIFO approach
+- Estimate remaining inventory value, unrealized ROI, and holding time using the latest purchase price
+- Try live Steam Community Market prices for supported games with a safe fallback when requests fail
 - Per-row currency detection and conversion using a daily reference rate
 - Monthly activity, game summary, and year comparison charts
+- Game-level purchase, sales, and net cash-flow comparison chart
 - Activity heatmap by day and hour
 - Export tables as CSV or JSON
 - Save the active analytics view as a PNG or PDF report
 - Local persistence with IndexedDB
 - PWA installation and offline support
 - Dark/light themes with Turkish and English interfaces
+- Vite + React application shell with interactive Nivo line, pie, and bar charts
 
 ## 📥 Getting the CSV File
 
@@ -96,7 +100,20 @@ Market Name,Price in Cents,Type
 - Currency is detected from the code or symbol in each row's `Display Price`, allowing mixed currencies such as USD and TRY in one file. A fallback CSV currency can be selected for unmarked rows.
 - Amounts use Frankfurter's latest daily reference rate rather than the historical rate from each transaction date.
 - Incomplete history or mixed currencies in one dataset can affect the results.
-- PNG and PDF reports include the analytics tab that is active at export time.
+- Unrealized profit is estimated by valuing remaining quantities at the latest purchase price; it is not a live Steam market quote.
+- The inventory table includes item-level unrealized ROI and average holding time.
+- **Refresh live prices** tries Steam Community Market's `priceoverview` endpoint in the browser for supported games. CORS, rate limits, or missing items preserve the latest-purchase-price valuation; CSV contents are never sent to a third-party server.
+
+## 🧪 Tests
+
+Core calculation tests use Node's test runner, while React flow tests use Vitest and Testing Library:
+
+```bash
+npm test
+npm run test:core
+npm run test:ui
+```
+- PNG and PDF reports include the full dashboard; long PDF reports are split across multiple A4 pages automatically.
 
 <a id="run-locally"></a>
 
@@ -105,20 +122,28 @@ Market Name,Price in Cents,Type
 ### Requirements
 
 - A current Chromium, Firefox, or Safari browser
-- Python 3 for the local HTTP server
-- Node.js 18 or later for the test suite
+- Node.js 18 or later
 
 ### Start the Project
 
 ```bash
 git clone https://github.com/salvetum/MarketMemento.git
 cd MarketMemento
-npm run serve
+npm install
+npm run dev
 ```
 
-Then open [http://localhost:8000](http://localhost:8000).
+Then open the local URL printed by Vite (usually
+[http://localhost:5173](http://localhost:5173)). To produce and preview a
+production bundle:
 
-> Basic analysis also works by opening `index.html` directly. PWA installation and offline caching require an HTTP server.
+```bash
+npm run build
+npm run preview
+```
+
+The Vite server is required for the supported PWA, IndexedDB, and offline
+cache workflow. Opening `index.html` directly is no longer supported.
 
 ### Tests
 
@@ -130,27 +155,27 @@ The suite covers date parsing, duplicate removal, fee calculation, and FIFO matc
 
 ## 🌐 Publish with GitHub Pages
 
-MarketMemento consists of static files and requires no build step.
-
-1. Push the files to the repository's default branch.
-2. Open `Settings > Pages`.
-3. Select `Deploy from a branch` as the source.
-4. Choose the default branch and the `/ (root)` directory, then save.
-
-The `.nojekyll` file, relative asset paths, and PWA files are ready for GitHub Pages.
+`npm run build` creates a deployable Vite bundle in `dist/`. Configure GitHub
+Pages to publish that directory (or upload it from CI). PWA files and relative
+asset paths are included in the build output.
 
 ## 📁 Project Structure
 
 ```text
-index.html              Main interface
+index.html              Main HTML shell and PWA metadata
+src/main.jsx            Vite entry point
+src/App.jsx             React screen, state management, and feature components
+src/services/           CSV, storage, and market-data services
+src/nivoCharts.jsx      React/Nivo chart components
 styles.css              Glassmorphism design and responsive rules
 core.js                 Date parsing, deduplication, and FIFO calculation core
-app.js                  File handling, UI, charts, and local persistence
+app.js                  Compatibility path for older links (UI now lives in React)
+vite.config.js          Copies PWA and vendor assets into production output
 sw.js                   PWA and offline cache
 manifest.webmanifest    PWA metadata
 examples/               Anonymous sample CSV
 tests/                  Node.js test suite
-vendor/                 Local third-party libraries and licenses
+vendor/                 Fonts, Bootstrap assets, and license notices
 ```
 
 ## 📜 License

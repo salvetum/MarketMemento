@@ -1,0 +1,5 @@
+MIT License
+
+Copyright (c) 2019-present, VoidZero Inc. and contributors.
+
+The Vite license text is distributed with the npm package.

@@ -1,4 +1,5 @@
 node_modules/
+dist/
 tmp/
 marketmemento-report-*
 .DS_Store

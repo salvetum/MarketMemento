@@ -1,10 +1,7 @@
-const CACHE_NAME = 'marketmemento-v10';
+const CACHE_NAME = 'marketmemento-v12';
 const APP_ASSETS = [
     './',
     './index.html',
-    './styles.css?v=17',
-    './core.js',
-    './app.js?v=17',
     './manifest.webmanifest',
     './icon.svg',
     './assets/icons/icon-192.png',
@@ -15,16 +12,11 @@ const APP_ASSETS = [
     './vendor/fonts/space-grotesk-latin-ext.woff2',
     './vendor/fonts/space-grotesk-latin.woff2',
     './vendor/bootstrap/bootstrap.min.css',
-    './vendor/bootstrap/bootstrap.bundle.min.js',
     './vendor/bootstrap-icons/bootstrap-icons.min.css',
     './vendor/bootstrap-icons/fonts/bootstrap-icons.woff',
     './vendor/bootstrap-icons/fonts/bootstrap-icons.woff2',
     './vendor/bootstrap-icons/fonts/bootstrap-icons.woff?dd67030699838ea613ee6dbda90effa6',
     './vendor/bootstrap-icons/fonts/bootstrap-icons.woff2?dd67030699838ea613ee6dbda90effa6',
-    './vendor/apexcharts/apexcharts.min.js',
-    './vendor/papaparse/papaparse.min.js',
-    './vendor/html2canvas/html2canvas.min.js',
-    './vendor/jspdf/jspdf.umd.min.js'
 ];
 
 self.addEventListener('install', event => {
@@ -43,6 +35,17 @@ self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
     const requestUrl = new URL(event.request.url);
     if (requestUrl.origin === self.location.origin) {
+        const isNavigation = event.request.mode === 'navigate';
+        if (!isNavigation && requestUrl.pathname.includes('/assets/')) {
+            event.respondWith(
+                caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+                    return response;
+                }))
+            );
+            return;
+        }
         event.respondWith(
             fetch(event.request)
                 .then(response => {
@@ -50,8 +53,12 @@ self.addEventListener('fetch', event => {
                     caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
                     return response;
                 })
-                .catch(() => caches.match(event.request).then(response => response || caches.match('./index.html')))
+                .catch(() => caches.match(event.request).then(response => response || (isNavigation ? caches.match('./index.html') : Response.error())))
         );
+        return;
+    }
+    if (requestUrl.hostname === 'api.frankfurter.dev' || requestUrl.hostname === 'steamcommunity.com') {
+        event.respondWith(fetch(event.request));
         return;
     }
     event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
