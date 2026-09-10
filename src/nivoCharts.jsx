@@ -181,6 +181,7 @@ function BarChart({ options }) {
   const horizontal = Boolean(options.plotOptions?.bar?.horizontal);
   const tickStep = Math.max(1, Math.ceil(categories.length / 8));
   const tickValues = categories.filter((_, index) => index % tickStep === 0);
+  const horizontalLabelLimit = options.horizontalLabelLimit || 28;
   return (
     <ChartFrame title={titleFor(options)}>
       <ChartViewport>
@@ -190,7 +191,7 @@ function BarChart({ options }) {
             keys={keys}
             indexBy="label"
             layout={horizontal ? 'horizontal' : 'vertical'}
-            margin={{ top: options.legendPosition === 'bottom' ? 8 : 28, right: 18, bottom: horizontal ? (options.legendPosition === 'bottom' ? 82 : 48) : categories.length > 8 ? 104 : 88, left: horizontal ? 190 : 52 }}
+            margin={{ top: options.legendPosition === 'bottom' ? 8 : 28, right: 18, bottom: horizontal ? (options.legendPosition === 'bottom' ? 82 : 30) : categories.length > 8 ? 104 : 88, left: horizontal ? 176 : 52 }}
             padding={categories.length > 8 ? 0.16 : 0.28}
             borderRadius={0}
             colors={options.colors || ['#57e6a5', '#67c1f5', '#a684ff']}
@@ -198,8 +199,8 @@ function BarChart({ options }) {
             enableGridX={horizontal}
             enableGridY={!horizontal}
             theme={chartTheme()}
-            axisBottom={{ tickValues, tickSize: 5, tickPadding: 8, tickRotation: horizontal ? 0 : -42, format: compactLabel }}
-            axisLeft={{ tickSize: 5, tickPadding: 8 }}
+            axisBottom={{ tickValues: horizontal ? undefined : tickValues, tickSize: 5, tickPadding: 8, tickRotation: horizontal ? 0 : -42, format: horizontal ? value => Number(value).toLocaleString() : compactLabel }}
+            axisLeft={{ tickValues: horizontal ? categories : undefined, tickSize: 5, tickPadding: 8, format: horizontal ? value => compactLabel(value, horizontalLabelLimit) : undefined }}
             valueScale={{ type: 'linear', min: 'auto', max: 'auto' }}
             valueFormat={value => Number(value).toLocaleString()}
             tooltip={({ id, value, indexValue }) => <ChartTooltip label={String(indexValue)} rows={[{ label: String(id), value: formatChartValue(value) }]} />}
