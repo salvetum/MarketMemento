@@ -173,7 +173,7 @@ function PieChart({ options }) {
 function BarChart({ options }) {
   const categories = options.xaxis?.categories || [];
   const chartSeries = options.series || [];
-  const keys = chartSeries.map((series, index) => series.name || `value-${index}`);
+  const keys = chartSeries.map((series, index) => series.name || options.defaultSeriesName || `value-${index + 1}`);
   const data = categories.map((label, index) => Object.fromEntries([
     ['label', label],
     ...chartSeries.map((series, seriesIndex) => [keys[seriesIndex], Number(series.data?.[index]) || 0])
@@ -190,7 +190,7 @@ function BarChart({ options }) {
             keys={keys}
             indexBy="label"
             layout={horizontal ? 'horizontal' : 'vertical'}
-            margin={{ top: 8, right: 18, bottom: horizontal ? 36 : categories.length > 8 ? 104 : 88, left: horizontal ? 132 : 52 }}
+            margin={{ top: 8, right: 18, bottom: horizontal ? 48 : categories.length > 8 ? 104 : 88, left: horizontal ? 168 : 52 }}
             padding={categories.length > 8 ? 0.16 : 0.28}
             borderRadius={0}
             colors={options.colors || ['#57e6a5', '#67c1f5', '#a684ff']}
@@ -203,6 +203,7 @@ function BarChart({ options }) {
             valueScale={{ type: 'linear' }}
             valueFormat={value => Number(value).toLocaleString()}
             tooltip={({ id, value, indexValue }) => <ChartTooltip label={String(indexValue)} rows={[{ label: String(id), value: formatChartValue(value) }]} />}
+            legends={chartSeries.length > 1 ? [{ anchor: 'top-right', direction: 'row', translateY: -6, itemWidth: 108, itemHeight: 18, symbolSize: 10 }] : undefined}
             role="img"
             ariaLabel={titleFor(options)}
           />
