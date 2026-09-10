@@ -176,12 +176,13 @@ function BarChart({ options }) {
   const keys = chartSeries.map((series, index) => series.name || options.defaultSeriesName || `value-${index + 1}`);
   const data = categories.map((label, index) => Object.fromEntries([
     ['label', label],
+    ['fullLabel', label],
     ...chartSeries.map((series, seriesIndex) => [keys[seriesIndex], Number(series.data?.[index]) || 0])
   ]));
   const horizontal = Boolean(options.plotOptions?.bar?.horizontal);
   const tickStep = Math.max(1, Math.ceil(categories.length / 8));
   const tickValues = categories.filter((_, index) => index % tickStep === 0);
-  const horizontalLabelLimit = options.horizontalLabelLimit || 22;
+  const horizontalLabelLimit = options.horizontalLabelLimit || (categories.length > 10 ? 16 : 22);
   return (
     <ChartFrame title={titleFor(options)}>
       <ChartViewport>
@@ -203,7 +204,7 @@ function BarChart({ options }) {
             axisLeft={{ tickValues: horizontal ? categories : undefined, tickSize: 5, tickPadding: 8, format: horizontal ? value => compactLabel(value, horizontalLabelLimit) : undefined }}
             valueScale={{ type: 'linear', min: 'auto', max: 'auto' }}
             valueFormat={value => Number(value).toLocaleString()}
-            tooltip={({ id, value, indexValue }) => <ChartTooltip label={String(indexValue)} rows={[{ label: String(id), value: formatChartValue(value) }]} />}
+            tooltip={({ id, value, indexValue, data: datum }) => <ChartTooltip label={String(datum?.fullLabel || indexValue)} rows={[{ label: String(id), value: formatChartValue(value) }]} />}
             legends={chartSeries.length > 1 ? [{ anchor: options.legendPosition === 'bottom' ? 'bottom' : 'top-right', direction: 'row', translateY: options.legendPosition === 'bottom' ? 72 : -24, itemWidth: 108, itemHeight: 18, symbolSize: 10 }] : undefined}
             role="img"
             ariaLabel={titleFor(options)}
