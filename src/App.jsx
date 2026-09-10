@@ -238,7 +238,15 @@ function App() {
     });
     const handler = event => { event.preventDefault(); setInstallPrompt(event); };
     window.addEventListener('beforeinstallprompt', handler);
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+    if ('serviceWorker' in navigator) {
+      let reloadedForServiceWorker = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloadedForServiceWorker) return;
+        reloadedForServiceWorker = true;
+        window.location.reload();
+      });
+      navigator.serviceWorker.register(`sw.js?v=${import.meta.env.VITE_BUILD_VERSION || '13'}`).catch(() => {});
+    }
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
